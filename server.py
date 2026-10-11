@@ -5,6 +5,7 @@ from urllib.parse import urlparse, parse_qs
 from selcal import make_wav, validate, tones_for
 from rotation import configured_mapping
 from presets import Presets
+from preset_exports import build_list, csv_bytes
 import sqlite3
 import key_admin
 from wav_context import attach
@@ -46,6 +47,24 @@ class Handler(BaseHTTPRequestHandler):
             except ValueError as exc:
                 return self.reply(503,'application/json; charset=utf-8',json.dumps({'error':str(exc)},ensure_ascii=False).encode())
             return self.reply(200,'application/json',json.dumps(data).encode())
+        if url.path in ('/api/presets/codes', '/api/presets/export.csv'):
+            query = parse_qs(url.query, keep_blank_values=True)
+            try:
+                snapshot = self.snapshot()
+                snapshot.check_expected(query.get('period_id', [None])[0], query.get('key_id', [None])[0])
+                data = build_list((self.presets or Presets()).list(), snapshot)
+            except ValueError as exc:
+                return self.reply(400, 'application/json; charset=utf-8', json.dumps({'error':str(exc)}, ensure_ascii=False).encode())
+            except (OSError, sqlite3.Error):
+                return self.reply(503, 'application/json', b'{"error":"Preset storage unavailable"}')
+            if url.path.endswith('.csv'):
+                period = data['period_id'] or 'fixed'
+                return self.reply(200, 'text/csv; charset=utf-8', csv_bytes(data), {
+                    'Content-Disposition': f'attachment; filename="HACS-presets-{period}.csv"',
+                    'X-HACS-Period': data['period_id'] or '',
+                    'X-HACS-Key-ID': data['key_id'] or '',
+                })
+            return self.reply(200, 'application/json; charset=utf-8', json.dumps(data, ensure_ascii=False).encode())
         if url.path == '/api/presets':
             try:
                 data = {'presets':(self.presets or Presets()).list()}
