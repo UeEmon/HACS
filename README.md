@@ -13,6 +13,10 @@ Copyright 2026 UeEmon and HACS contributors.
 
 Python・コンテナ内の第三者ソフトウェアにはそれぞれのライセンスが適用されます。[第三者ソフトウェア情報](THIRD_PARTY_NOTICES.md) を参照してください。Docker Desktopの契約は別で、政府機関での利用には有償サブスクリプションが必要です。導入支援・保守は別途契約で提供できます。
 
+## システム構成
+
+[システム構成図](docs/system-architecture.md)に、全体構成、内部ループバック、共通鍵・期間管理、実無線機との接続境界を記載しています。
+
 ## 起動
 
 Python 3.10以降:
