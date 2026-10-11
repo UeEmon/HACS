@@ -1,0 +1,58 @@
+"""Receiver simulator service. No RF reception or microphone capture."""
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
+from urllib.parse import urlparse, parse_qs
+import json
+import os
+import threading
+from receiver import MAX_BYTES, decode_wav
+
+class Handler(BaseHTTPRequestHandler):
+    analysis_lock = threading.Lock()
+
+    def reply(self, status, body, mime='application/json; charset=utf-8'):
+        if not isinstance(body, bytes):
+            body = json.dumps(body, ensure_ascii=False).encode()
+        self.send_response(status)
+        self.send_header('Content-Type', mime)
+        self.send_header('Content-Length',str(len(body)))
+        self.send_header('Cache-Control','no-store')
+        self.send_header('X-Content-Type-Options','nosniff')
+        self.end_headers()
+        self.wfile.write(body)
+
+    def do_GET(self):
+        if urlparse(self.path).path == '/':
+            return self.reply(200,Path(__file__).with_name('receiver.html').read_bytes(),'text/html; charset=utf-8')
+        self.reply(404,{'error':'Not found'})
+
+    def do_POST(self):
+        url = urlparse(self.path)
+        if url.path != '/api/decode':
+            return self.reply(404,{'error':'Not found'})
+        try:
+            size = int(self.headers.get('Content-Length','0'))
+        except ValueError:
+            return self.reply(400,{'error':'Content-Lengthが不正です。'})
+        if not 0 < size <= MAX_BYTES:
+            return self.reply(413,{'error':'WAVは2 MB以下にしてください。'})
+        if not self.analysis_lock.acquire(blocking=False):
+            return self.reply(409,{'error':'解析中です。完了後に再試行してください。'})
+        try:
+            self.connection.settimeout(10)
+            payload=self.rfile.read(size)
+            if len(payload)!=size:
+                raise ValueError('アップロードが途中で切れています。')
+            own_code=parse_qs(url.query).get('own_code',[''])[0]
+            result=decode_wav(payload,own_code)
+        except (ValueError,OSError) as exc:
+            self.reply(400,{'error':str(exc)})
+        else:
+            self.reply(200,result)
+        finally:
+            self.analysis_lock.release()
+
+if __name__ == '__main__':
+    port=int(os.environ.get('PORT','8788'))
+    print(f'HACS receiver simulator: http://localhost:{port}',flush=True)
+    ThreadingHTTPServer((os.environ.get('HOST','127.0.0.1'),port),Handler).serve_forever()

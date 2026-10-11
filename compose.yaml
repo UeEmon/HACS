@@ -6,3 +6,13 @@ services:
     restart: unless-stopped
     read_only: true
     cap_drop: [ALL]
+  receiver:
+    build: .
+    command: ["python", "receiver_server.py"]
+    environment:
+      PORT: "8788"
+    ports:
+      - "127.0.0.1:8788:8788"
+    restart: unless-stopped
+    read_only: true
+    cap_drop: [ALL]
