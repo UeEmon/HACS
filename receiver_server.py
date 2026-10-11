@@ -6,7 +6,8 @@ import json
 import os
 import threading
 from receiver import MAX_BYTES, decode_wav
-from tail_mapping import VERSION, tail_to_selcal, selcal_to_tail, validate_tail, describe_tail
+from selcal import tones_for, validate
+from tail_mapping import mapping_version, tail_to_selcal, selcal_to_tail, validate_tail, describe_tail
 
 class Handler(BaseHTTPRequestHandler):
     analysis_lock = threading.Lock()
@@ -28,9 +29,11 @@ class Handler(BaseHTTPRequestHandler):
         if urlparse(self.path).path == '/api/convert':
             query = parse_qs(urlparse(self.path).query, keep_blank_values=True)
             try:
+                mode = query.get('mode', ['selcal16'])[0]
+                tones_for(mode)
                 if ('tail_number' in query) == ('code' in query):
                     raise ValueError('tail_number または code のどちらか一方を指定してください。')
-                result = describe_tail(query['tail_number'][0]) if 'tail_number' in query else describe_tail(selcal_to_tail(query['code'][0]))
+                result = describe_tail(query['tail_number'][0], mode) if 'tail_number' in query else describe_tail(selcal_to_tail(query['code'][0], mode), mode)
             except ValueError as exc:
                 return self.reply(400, {'error': str(exc)})
             return self.reply(200, result)
@@ -54,18 +57,28 @@ class Handler(BaseHTTPRequestHandler):
             if len(payload)!=size:
                 raise ValueError('アップロードが途中で切れています。')
             query=parse_qs(url.query,keep_blank_values=True)
+            mode=query.get('mode',['selcal16'])[0]
+            own_mode=query.get('own_mode',[mode])[0]
+            tones_for(mode)
+            tones_for(own_mode)
+            if mode == 'selcal16' and own_mode == 'selcal32':
+                raise ValueError('16音の受信能力では32音の自機方式を設定できません。')
             if ('own_tail_number' in query) == ('own_code' in query):
                 raise ValueError('own_tail_number または own_code のどちらか一方を指定してください。')
             own_tail=validate_tail(query['own_tail_number'][0]) if 'own_tail_number' in query else None
-            own_code=tail_to_selcal(own_tail) if own_tail is not None else query['own_code'][0]
-            result=decode_wav(payload,own_code)
+            own_code=tail_to_selcal(own_tail, own_mode) if own_tail is not None else validate(query['own_code'][0], own_mode)
+            result=decode_wav(payload,own_code,mode)
             result['own_tail_number']=own_tail
-            result['mapping_version']=VERSION
+            result['mapping_version']=mapping_version(own_mode) if own_tail is not None else None
+            result['own_mode']=own_mode
             for call in result['calls']:
                 try:
-                    call['tail_number']=selcal_to_tail(call['code'])
+                    call_mode='selcal32' if call['extended_tones'] else 'selcal16'
+                    call['tail_number']=selcal_to_tail(call['code'], call_mode)
+                    call['mapping_version']=mapping_version(call_mode)
                 except ValueError:
                     call['tail_number']=None
+                    call['mapping_version']=None
         except (ValueError,OSError) as exc:
             self.reply(400,{'error':str(exc)})
         else:
