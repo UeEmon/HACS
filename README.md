@@ -198,6 +198,8 @@ JSONの `status` は `alert`（自局一致）、`other_station`（他局）、`
 
 ## 実機接続の設計
 
+[国際電気・日立国際電気製の公開資料確認](docs/radio-samples/kokusai-hitachi-hf.md)ではHRC-121/122のHF機・製造会社表記を確認し、HRC-122用のドライランサンプルを記載しています。接続仕様本体は未確認です。
+
 公開取扱説明書に基づく [IC-7300のUSB音声・RTS接続サンプル](docs/radio-samples/icom-ic7300-usb.md)を追加しています（実機未検証）。
 
 ローデ・シュワルツ製は、公開カタログに基づく [R&S XK4115Aの接続検討サンプル](docs/radio-samples/rs-xk4115a.md)を用意しています。Audio/PTT・Ethernet・RS-232を候補として記録し、現段階ではドライランのみ実行できます。

@@ -1,0 +1,98 @@
+{
+  "profile_version": "HACS-RADIO-v1",
+  "name": "Hitachi Kokusai Electric HRC-122 public-document study sample",
+  "backend": "dry_run",
+  "radio": {
+    "manufacturer": "Hitachi Kokusai Electric (public procurement document attribution)",
+    "model": "HRC-122",
+    "connector": null,
+    "audio_signal_pin": null,
+    "audio_return_pin": null,
+    "ptt_signal_pin": null,
+    "ptt_return_pin": null
+  },
+  "audio_input": {
+    "host_output_device": null,
+    "balanced": null,
+    "input_impedance_ohms": null,
+    "nominal_input_vrms": null,
+    "maximum_input_vrms": null,
+    "passband_hz": null,
+    "galvanic_isolation": null
+  },
+  "ptt": {
+    "method": "unconfigured",
+    "active_polarity": null,
+    "open_circuit_voltage_v": null,
+    "sink_current_ma": null,
+    "galvanic_isolation": null,
+    "independent_watchdog": null
+  },
+  "timing": {
+    "lead_seconds": 0.3,
+    "tail_seconds": 0.2,
+    "max_ptt_seconds": 5.0
+  },
+  "sample_metadata": {
+    "implementation_status": "dry_run_only",
+    "hardware_verified": false,
+    "review_date_jst": "2026-10-12",
+    "radio_type": "HF radio (explicitly listed in public procurement document)",
+    "source": "https://www.mod.go.jp/msdf/bukei/zd/nyuusatsu/K-1-1624-0021.pdf",
+    "source_page_1_based": 11,
+    "source_rows": [
+      354,
+      355,
+      356,
+      357,
+      358,
+      359
+    ],
+    "documentation": "docs/radio-samples/kokusai-hitachi-hf.md",
+    "source_type": "public procurement component list, not interface specification",
+    "variant": "HRC-122 as listed; do not inherit specifications of HRC-122B or other variants",
+    "timing_values": "HACS dry-run defaults, not manufacturer specifications"
+  },
+  "documented_components": [
+    {
+      "model": "N-RT-210/HRC-122",
+      "description": "RECEIVER TRANSMITTER,RADIO",
+      "source_row": 357
+    },
+    {
+      "model": "N-AM-413/HRC-122",
+      "description": "AMPLIFIER,RADIO FREQUENCY",
+      "source_row": 358
+    },
+    {
+      "model": "N-CU-251/HRC-122",
+      "description": "NETWORK,IMPEDANCE MATCHING",
+      "source_row": 359
+    }
+  ],
+  "transport_candidates": {
+    "analog_audio_discrete_ptt": {
+      "supported": null,
+      "pinout": null,
+      "audio_input_vrms": null,
+      "ptt_electrical_type": null
+    },
+    "ethernet": {
+      "supported": null,
+      "control_protocol": null,
+      "audio_protocol": null,
+      "ptt_command": null
+    },
+    "serial": {
+      "supported": null,
+      "electrical_standard": null,
+      "baudrate": null,
+      "ptt_command": null
+    },
+    "mil_std_1553": {
+      "supported": null,
+      "bc_rt_role": null,
+      "icd": null
+    }
+  }
+}
