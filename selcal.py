@@ -46,11 +46,17 @@ if __name__ == '__main__':
     import argparse
     from pathlib import Path
     parser = argparse.ArgumentParser(description='航空SELCAL WAV生成')
-    parser.add_argument('code')
+    parser.add_argument('code', nargs='?', help='SELCALコード（従来の直接指定）')
+    parser.add_argument('--tail', help='HACS-TN16-v1で変換する4桁の機番号')
     parser.add_argument('--output', default='selcal.wav')
     parser.add_argument('--level', type=float, default=0.5)
     args = parser.parse_args()
+    if (args.code is None) == (args.tail is None):
+        parser.error('code または --tail のどちらか一方を指定してください。')
     try:
+        if args.tail is not None:
+            from tail_mapping import tail_to_selcal
+            args.code = tail_to_selcal(args.tail)
         Path(args.output).write_bytes(make_wav(args.code, args.level))
     except ValueError as exc:
         parser.error(str(exc))

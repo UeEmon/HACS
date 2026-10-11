@@ -1,20 +1,20 @@
 <!doctype html><html lang="ja"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>HACS 受信シミュレータ</title>
 <style>body{font:17px system-ui;background:#102136;color:#edf5ff;margin:0}main{max-width:720px;margin:32px auto;padding:24px}p{line-height:1.7}label{display:block;margin:24px 0 8px}input,button{font:inherit;padding:12px;border-radius:8px}input[type=text]{letter-spacing:.2em;width:85%;font-size:26px}button{background:#aee4ff;border:0;margin:20px 0;cursor:pointer}button:disabled{opacity:.5}#result{padding:20px;background:#213b58;border-radius:12px;white-space:pre-line}.alert{outline:3px solid #72e7a9}table{width:100%;border-collapse:collapse}td,th{padding:12px;text-align:left;border-bottom:1px solid #61748b}.note{font-size:14px;color:#c4d4e8}</style>
 <main><p>HF Aircraft Calling System</p><h1>HACS 受信シミュレータ</h1><p>送信部で保存したWAVを読み込み、実際の音声成分から呼び出しコードを検出します。</p>
-<label for="own">シミュレータの自局コード</label><input id="own" value="AC-BD" maxlength="5" autocomplete="off">
+<label for="own">シミュレータの自機番号（4桁）</label><input id="own" type="text" inputmode="numeric" pattern="[0-9]{4}" value="5501" maxlength="4" autocomplete="off">
 <label for="file">受信音声（PCM WAV）</label><input id="file" type="file" accept=".wav,audio/wav"><p class="note">8〜96 kHz / 16 bit / mono / 最大10秒・2 MB。送信部で「WAVを保存」したファイルを選択してください。</p>
 <button id="decode">受信判定</button><p><label><input id="chime" type="checkbox" checked> 自局への呼び出しで通知音を鳴らす</label></p>
-<section id="result" role="status" aria-live="polite">受信音声を選択してください。</section><div id="calls"></div><p class="note">実無線の受信機能はありません。解析時間の分解能は100 msです。検出結果は互換性試験の参考であり、実機での受信成功を示しません。</p></main>
+<section id="result" role="status" aria-live="polite">受信音声を選択してください。</section><div id="calls"></div><p class="note">実無線の受信機能はありません。解析時間の分解能は100 msです。HACS-TN16-v1で機番号を復元します。実機の割当コードの登録・照合は未対応です。検出結果は実機での受信成功を示しません。</p></main>
 <script>
 const own=document.querySelector('#own'),file=document.querySelector('#file'),button=document.querySelector('#decode'),result=document.querySelector('#result'),calls=document.querySelector('#calls');let context;
-try{own.value=localStorage.getItem('hacs.receiver.own')||'AC-BD'}catch{}
+try{own.value=localStorage.getItem('hacs.receiver.tail.v1')||'5501'}catch{}
 function clear(){result.classList.remove('alert');result.textContent='現在の設定で受信判定してください。';calls.replaceChildren()}own.oninput=file.onchange=clear;
 button.onclick=async()=>{clear();const f=file.files[0];if(!f){result.textContent='WAVを選択してください。';return}if(f.size>2000000){result.textContent='WAVは2 MB以下にしてください。';return}button.disabled=true;own.disabled=file.disabled=true;result.textContent='解析中…';try{
 if(document.querySelector('#chime').checked){try{const Audio=window.AudioContext||window.webkitAudioContext;if(Audio){context=context||new Audio();await context.resume()}}catch{context=null}}
-const r=await fetch('/api/decode?'+new URLSearchParams({own_code:own.value}),{method:'POST',headers:{'Content-Type':'audio/wav'},body:f});const data=await r.json();if(!r.ok)throw Error(data.error||'解析失敗');
-try{localStorage.setItem('hacs.receiver.own',data.own_code)}catch{}
-result.textContent=({alert:'自局への呼び出しを検出しました',other_station:'他局への呼び出しを検出しました',not_detected:'有効な呼び出しを検出できませんでした'})[data.status]+'\n自局: '+data.own_code+' / 音声長: '+data.duration_seconds+'秒';
-if(data.calls.length){const table=document.createElement('table');const head=table.insertRow();for(const label of ['検出コード','判定','信号時間']){const th=document.createElement('th');th.textContent=label;head.append(th)}for(const c of data.calls){const row=table.insertRow();for(const text of [c.code,c.matched?'自局一致':'他局',c.pulse_seconds.join(' / ')+'秒（間隔 '+c.gap_seconds+'秒）'])row.insertCell().textContent=text}calls.append(table)}
+const r=await fetch('/api/decode?'+new URLSearchParams({own_tail_number:own.value}),{method:'POST',headers:{'Content-Type':'audio/wav'},body:f});const data=await r.json();if(!r.ok)throw Error(data.error||'解析失敗');
+try{localStorage.setItem('hacs.receiver.tail.v1',data.own_tail_number)}catch{}
+result.textContent=({alert:'自局への呼び出しを検出しました',other_station:'他局への呼び出しを検出しました',not_detected:'有効な呼び出しを検出できませんでした'})[data.status]+'\n自機: '+data.own_tail_number+' / 内部コード: '+data.own_code+' / 音声長: '+data.duration_seconds+'秒';
+if(data.calls.length){const table=document.createElement('table');const head=table.insertRow();for(const label of ['検出機番号','内部コード','判定','信号時間']){const th=document.createElement('th');th.textContent=label;head.append(th)}for(const c of data.calls){const row=table.insertRow();for(const text of [c.tail_number===null?'HACS割当範囲外':c.tail_number,c.code,c.matched?'自局一致':'他局',c.pulse_seconds.join(' / ')+'秒（間隔 '+c.gap_seconds+'秒）'])row.insertCell().textContent=text}calls.append(table)}
 if(data.status==='alert'){result.classList.add('alert');if(document.querySelector('#chime').checked&&context){try{const osc=context.createOscillator(),gain=context.createGain();osc.frequency.value=880;gain.gain.setValueAtTime(.08,context.currentTime);gain.gain.exponentialRampToValueAtTime(.001,context.currentTime+.5);osc.connect(gain).connect(context.destination);osc.start();osc.stop(context.currentTime+.5)}catch{result.textContent+='\n通知音を再生できませんでした。'}}}
 }catch(e){result.textContent=e.message}finally{button.disabled=false;own.disabled=file.disabled=false}};
 </script></html>

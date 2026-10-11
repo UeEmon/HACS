@@ -3,18 +3,18 @@
 <title>HACS</title>
 <style>body{font:17px system-ui;background:#102136;color:#edf5ff;margin:0}main{max-width:640px;margin:48px auto;padding:24px}h1{letter-spacing:.08em}label{display:block;margin:24px 0 8px}input,button{font:inherit;padding:12px;border-radius:8px;border:1px solid #7c9bbf}input[type=text]{width:90%;background:#fff;letter-spacing:.2em;font-size:28px}button{cursor:pointer;margin:8px 8px 8px 0;background:#aee4ff;color:#102136}button:disabled{opacity:.4}p{line-height:1.7}audio{width:100%;margin:16px 0}#status{min-height:2em}a{color:#aee4ff}.note{color:#c4d4e8;font-size:14px}</style>
 <main><p>航空機用・従来16音</p><h1>HACS</h1>
-<p>HF Aircraft Calling System</p><p>コードから航空機用SELCAL互換の呼び出し音声を作成します。</p>
-<label for="code">SELCALコード</label><input id="code" placeholder="AB-CD" maxlength="5" autocomplete="off">
+<p>HF Aircraft Calling System</p><p>航空機の4桁の機番号から呼び出し音声を作成します。</p>
+<label for="code">呼び出し先の機番号（4桁）</label><input id="code" type="text" inputmode="numeric" pattern="[0-9]{4}" placeholder="5501" maxlength="4" autocomplete="off"><p class="note">HACS-TN16-v1で内部コードに変換します。実機の割当済みSELCALコードとは一致確認が必要です。</p>
 <label for="level">WAV出力レベル <span id="value">50%</span></label><input id="level" type="range" min="1" max="90" value="50">
 <p class="note">2音同時 × 1.0秒 → 無音0.2秒 → 2音同時 × 1.0秒。48 kHz / 16 bit / mono。</p>
 <button id="generate">音声を生成</button><button id="play" disabled>音声を再生</button><button id="stop" disabled>停止</button>
-<p id="status" role="status" aria-live="polite">コードを入力してください。</p><audio id="audio" controls></audio><a id="download" hidden>WAVを保存</a>
+<p id="status" role="status" aria-live="polite">機番号を入力してください。</p><audio id="audio" controls></audio><a id="download" hidden>WAVを保存</a>
 <p class="note">再生音は、このブラウザを開いた端末から出ます。無線送信・PTT制御は未接続です。SELCAL 32は未対応。</p><p>受信シミュレータ: http://localhost:8788<br>保存したWAVを受信画面で読み込むと、自局コードとの一致を確認できます。</p></main>
 <script>
 const code=document.querySelector('#code'),level=document.querySelector('#level'),audio=document.querySelector('#audio'),status=document.querySelector('#status'),play=document.querySelector('#play'),stop=document.querySelector('#stop'),download=document.querySelector('#download'),generate=document.querySelector('#generate');let objectURL=null,busy=false;
 level.oninput=()=>{document.querySelector('#value').textContent=level.value+'%';invalidate()};code.oninput=invalidate;
 function invalidate(){audio.pause();audio.removeAttribute('src');audio.load();play.disabled=stop.disabled=true;download.hidden=true;if(objectURL){URL.revokeObjectURL(objectURL);objectURL=null}status.textContent='現在の設定で音声を生成してください。'}
-generate.onclick=async()=>{if(busy)return;busy=true;generate.disabled=true;code.disabled=level.disabled=true;invalidate();status.textContent='生成中…';try{const r=await fetch('/tone.wav?'+new URLSearchParams({code:code.value,level:Number(level.value)/100}));if(!r.ok)throw Error(await r.text());objectURL=URL.createObjectURL(await r.blob());audio.src=objectURL;download.href=objectURL;download.download='SELCAL-'+code.value.toUpperCase().replace('-','')+'.wav';download.hidden=false;play.disabled=false;status.textContent='音声を生成しました。再生または保存できます。'}catch(e){status.textContent=e.message}finally{busy=false;generate.disabled=false;code.disabled=level.disabled=false}};
+generate.onclick=async()=>{if(busy)return;busy=true;generate.disabled=true;code.disabled=level.disabled=true;invalidate();status.textContent='生成中…';try{const r=await fetch('/tone.wav?'+new URLSearchParams({tail_number:code.value,level:Number(level.value)/100}));if(!r.ok)throw Error(await r.text());objectURL=URL.createObjectURL(await r.blob());audio.src=objectURL;download.href=objectURL;download.download='HACS-'+code.value+'.wav';download.hidden=false;play.disabled=false;status.textContent='機番号 '+code.value+' → '+r.headers.get('X-HACS-SELCAL-Code')+'。音声を生成しました。'}catch(e){status.textContent=e.message}finally{busy=false;generate.disabled=false;code.disabled=level.disabled=false}};
 play.onclick=async()=>{audio.currentTime=0;try{await audio.play()}catch(e){status.textContent='再生できませんでした: '+e.message}};
 audio.onplay=()=>{play.disabled=true;stop.disabled=false;status.textContent='音声再生中（無線送信状態は未取得）'};
 audio.onpause=audio.onended=()=>{play.disabled=!objectURL;stop.disabled=true;status.textContent='音声再生停止（受信成功は未確認）'};

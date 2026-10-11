@@ -6,6 +6,7 @@ import json
 import os
 import threading
 from receiver import MAX_BYTES, decode_wav
+from tail_mapping import VERSION, tail_to_selcal, selcal_to_tail, validate_tail
 
 class Handler(BaseHTTPRequestHandler):
     analysis_lock = threading.Lock()
@@ -43,8 +44,19 @@ class Handler(BaseHTTPRequestHandler):
             payload=self.rfile.read(size)
             if len(payload)!=size:
                 raise ValueError('アップロードが途中で切れています。')
-            own_code=parse_qs(url.query).get('own_code',[''])[0]
+            query=parse_qs(url.query,keep_blank_values=True)
+            if ('own_tail_number' in query) == ('own_code' in query):
+                raise ValueError('own_tail_number または own_code のどちらか一方を指定してください。')
+            own_tail=validate_tail(query['own_tail_number'][0]) if 'own_tail_number' in query else None
+            own_code=tail_to_selcal(own_tail) if own_tail is not None else query['own_code'][0]
             result=decode_wav(payload,own_code)
+            result['own_tail_number']=own_tail
+            result['mapping_version']=VERSION
+            for call in result['calls']:
+                try:
+                    call['tail_number']=selcal_to_tail(call['code'])
+                except ValueError:
+                    call['tail_number']=None
         except (ValueError,OSError) as exc:
             self.reply(400,{'error':str(exc)})
         else:
