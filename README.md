@@ -1,1 +1,146 @@
-# HACS
+# HACS — HF Aircraft Calling System
+
+HF航空機呼び出しシステム。航空機用SELCAL互換の送信音声を生成します。
+
+従来の16音・4文字SELCALに対応する送信音声エンコーダです。Python標準ライブラリのみで動作します。Web操作画面、音声再生、WAV保存、CLI、Docker構成を含みます。Windows・Mac・Linuxで同一のLinuxコンテナを使用する構成です。既存受信装置との互換性を目標にした音声試作版であり、実機での相互接続・航空運用の適合性は未確認です。
+
+## 起動
+
+Python 3.10以降:
+
+```bash
+cd HACS
+python3 server.py
+```
+
+ブラウザで http://localhost:8787 を開きます。
+
+Docker Desktop（Intel / Apple Silicon）またはLinux Docker:
+
+```bash
+cd HACS
+docker compose up --build -d
+```
+
+Docker実行および各OSでの実行はこの開発環境では未検証です。ポートはローカル端末のみからアクセスできます。
+
+## Windows・Mac・Linux共通構成
+
+| 処理 | 実行場所 |
+|---|---|
+| コード検証・音声生成・Web画面配信 | Linuxコンテナ |
+| 再生・停止・WAV保存 | ホスト端末のブラウザ |
+| USB音声機器の管理・音声出力先選択 | ホストOS |
+| 無線機の音声入力 | ホスト端末の音声出力と接続 |
+| PTT制御 | 将来の無線機アダプタ（未実装） |
+
+コンテナへのUSB音声デバイス割り当ては不要です。Windows・MacはDocker DesktopをLinuxコンテナモードで使用します。LinuxはDocker EngineとComposeプラグイン、またはDocker Desktopを使用します。Dockerサービスを起動してから、ZIPを展開したフォルダで操作してください。
+
+Windows PowerShell:
+
+```powershell
+cd HACS
+docker compose up --build -d
+```
+
+Mac / Linuxのターミナル:
+
+```bash
+cd HACS
+bash start.sh
+```
+
+Windows用の起動スクリプト `start.ps1` も同梱します。PowerShellの実行ポリシーでスクリプトが実行できない場合は、上記のDockerコマンドを直接実行してください。
+
+すべてのOSで http://localhost:8787 を開き、OSの音声出力設定で無線機に接続したUSB音声機器等を選択します。初回起動にはベースイメージを取得するネットワーク接続が必要です。Intel Mac / Apple Siliconのどちらも対象とし、ComposeでCPUアーキテクチャを固定しません。
+
+停止とログ確認（全OS共通）:
+
+```bash
+docker compose down
+docker compose logs --tail 100 hacs
+```
+
+音声再生には利用者の操作が必要です。Dockerホストから自動で音声を出す方式、音声出力先をアプリから固定する機能、PTTとの自動同期は現段階では未実装です。ブラウザが別の端末にある場合、音声もその端末から出るため、無線機に接続した端末で操作します。
+
+CLIで音声生成:
+
+```bash
+python3 selcal.py AC-BD --output AC-BD.wav --level 0.5
+python3 -m unittest -v
+```
+
+## 操作
+
+1. 割り当て済みの相手SELCALコードを入力する。
+2. WAV出力レベルを設定し「音声を生成」を押す。
+3. WAV保存または音声再生で信号を確認する。
+
+音声はブラウザを開いた端末の選択済み音声出力から出ます。Dockerホスト側の音声出力ではありません。WAVを変更したら再生成が必要です。保存名に用いたコードは利用者入力であり局の割り当て確認を行うものではありません。
+
+## 実装仕様
+
+| 項目 | 値 |
+|---|---|
+| 方式 | 従来16音、4文字、2音同時の2組 |
+| 信号 | 第1組1.0秒 → 無音0.2秒 → 第2組1.0秒 |
+| WAV | 48,000 Hz / 16 bit / mono / 2.2秒 |
+| 成分レベル | 2音の振幅は同一。合成ピーク上限は設定値 |
+| コード確認 | 使用文字、4文字、重複禁止、各組内のアルファベット順 |
+| 拡張32音 | 未対応 |
+| RF・PTT制御 | 未実装 |
+| 受信・自動応答 | 対象外 |
+
+WAV出力レベルはデジタル振幅です。無線機入力の電圧、RF出力、変調度の設定ではありません。ブラウザ音量とOS音量も実際の出力に影響します。
+
+## 実機接続の設計
+
+PCのUSB音声出力 → レベル調整・必要な音声絶縁 → HF無線機の指定音声入力 → RF送信 → 相手機器のSELCALデコーダ。
+
+PTTは独立したアダプタとする予定です。将来の送信処理は「排他取得 → PTT ON → 無線機固有の立ち上がり待ち → 音声再生 → 再生完了・末尾待ち → PTT OFF → 結果記録」とします。異常時にPTTを解除し、最大送信時間を設けます。送信完了と相手の呼び出し成功は別々に扱います。
+
+接続仕様の確定には無線機メーカー・型番、入力端子・規定レベル・インピーダンス、PTT方式（接点/CAT/シリアル等）、PCのOSが必要です。HFのRF周波数は無線機が設定します。SELCALの音声周波数とは別の値です。
+
+## 互換性の確認
+
+ソフトウェア試験では全16音の成分振幅、PCM仕様、信号・無音時間、クリッピング上限、無効コードの拒否、HTTP音声生成を確認します。
+
+実機確認では音声インターフェースのクロック誤差、音声フィルタ、利得差、歪み、無線機の立ち上がりを測定し、既存SELCALデコーダで複数のコードを試験します。現時点で実機による試験・RF測定は実施していません。
+
+## Git管理
+
+Gitリポジトリは `main` ブランチで管理します。初回コミットにソース、Docker設定、起動スクリプト、試験、説明書を含みます。生成したWAV、ログ、Pythonキャッシュ、端末固有の設定は除外します。
+
+```bash
+git status
+git log --oneline
+```
+
+更新時は変更を確認してからコミットします。コミット前に利用者の名前とメールアドレスをこのリポジトリに設定してください。
+
+```bash
+git config user.name "YOUR NAME"
+git config user.email "YOUR EMAIL"
+git diff
+git add .
+git commit -m "Describe the change"
+```
+
+リモートリポジトリ: https://github.com/UeEmon/HACS
+
+```bash
+git clone https://github.com/UeEmon/HACS.git
+cd HACS
+docker compose up --build -d
+```
+
+更新の取得は `git pull --ff-only`、更新の反映は `git push origin main` を使用します。認証情報はソースに保存しません。
+
+## 参照資料
+
+- ASRI: How SELCAL Works — コード、周波数表、信号順序、時間、文字順序。
+  https://asri.aero/selcal/how-selcal-works/
+- Sierra Leone Civil Aviation Authority: Part 10C Communication Systems (2024)、SELCAL System / Table 3-1、PDF 174〜175ページ（0基準）。音長1.0±0.25秒、間隔0.2±0.1秒、周波数安定度±0.15%、RF信号の音声歪み15%以下、2音のレベル差3 dB以内。これらは実機を通した測定で検証する。
+  https://slcaa.gov.sl/wp-content/uploads/2024/05/PART-10C-COMMUNICATION-SYSTEMS-5-FEB-24.pdf
+
+この試作版は認証済みの航空地上通信装置ではありません。

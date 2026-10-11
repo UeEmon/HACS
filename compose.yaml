@@ -1,0 +1,8 @@
+services:
+  hacs:
+    build: .
+    ports:
+      - "127.0.0.1:8787:8787"
+    restart: unless-stopped
+    read_only: true
+    cap_drop: [ALL]

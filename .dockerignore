@@ -1,0 +1,7 @@
+.git
+__pycache__
+*.py[cod]
+.venv
+.env
+*.wav
+*.log
