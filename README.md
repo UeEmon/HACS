@@ -70,6 +70,17 @@ python3 selcal.py AC-BD --output AC-BD.wav --level 0.5
 python3 -m unittest -v
 ```
 
+## 自動更新・プリセット・共通鍵管理
+
+[起動と操作の説明](docs/automatic-rotation-and-management.md)。日本時刻00:00（日次／週次は月曜／月次は1日）に対応表を自動切替します。プリセットは名称・機番号・方式を保存し、コードは現在の鍵で計算します。共通鍵の漏えい時は管理トークンを使って新しい鍵へ即時切替できます。
+
+```bash
+python3 generate_key.py --output .secrets/admin.token
+docker compose -f compose.yaml -f compose.rotation.yaml up --build -d
+```
+
+初回起動で親鍵を生成し、送信部・受信部が共有ストアを使用します。既存管理トークンは上書きしません。既定は日次、週次・月次は `.env` に `HACS_ROTATION=weekly` または `monthly` を設定します。通常の `docker compose up` は従来どおり鍵なしです。Docker構成の動作はこの環境では未検証です。
+
 ## 操作
 
 1. 相手の機番号を半角数字4桁で入力する（例: `5501`）。
@@ -110,7 +121,7 @@ python3 selcal.py --tail 5501 --mode selcal32 --output HACS-5501-selcal32.wav
 
 画面設計: [ユーザインターフェース仕様 v1](docs/user-interface-spec.md)。送信画面と受信シミュレータ画面の配置、方式選択、操作状態、結果表示、PC・iPad向けの表示条件を定義しています。
 
-変換の秘匿: [共通鍵による変換秘匿仕様案](docs/keyed-mapping-spec.md)。256ビットの乱数鍵で対応関係を変える設計案です。鍵付き変換は未実装で、SELCAL音声や通信の暗号化・認証を提供するものではありません。
+変換の秘匿: [共通鍵による変換秘匿仕様案](docs/keyed-mapping-spec.md)。256ビット親鍵から期間鍵を導出して対応関係を変える自動更新と、共通鍵の即時更新を実装しています。SELCAL音声や通信の暗号化・認証を提供するものではありません。
 
 ## 実装仕様
 

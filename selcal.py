@@ -65,9 +65,15 @@ if __name__ == '__main__':
     if (args.code is None) == (args.tail is None):
         parser.error('code または --tail のどちらか一方を指定してください。')
     try:
+        mapping = None
         if args.tail is not None:
-            from tail_mapping import tail_to_selcal
-            args.code = tail_to_selcal(args.tail, args.mode)
-        Path(args.output).write_bytes(make_wav(args.code, args.level, args.mode))
+            from rotation import configured_mapping
+            mapping = configured_mapping().snapshot()
+            args.code = mapping.to_code(args.tail, args.mode)
+        body = make_wav(args.code, args.level, args.mode)
+        if mapping is not None and mapping.period_id:
+            from wav_context import attach
+            body = attach(body, mapping.metadata())
+        Path(args.output).write_bytes(body)
     except ValueError as exc:
         parser.error(str(exc))

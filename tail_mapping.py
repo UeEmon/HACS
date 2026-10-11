@@ -74,6 +74,8 @@ if __name__ == '__main__':
     parser.add_argument('--mode', choices=['selcal16','selcal32'], default='selcal16')
     args = parser.parse_args()
     try:
-        print(tail_to_selcal(args.tail, args.mode) if args.tail is not None else selcal_to_tail(args.code, args.mode))
+        from rotation import configured_mapping
+        mapping = configured_mapping().snapshot()
+        print(mapping.to_code(args.tail, args.mode) if args.tail is not None else mapping.to_tail(args.code, args.mode))
     except ValueError as exc:
         parser.error(str(exc))

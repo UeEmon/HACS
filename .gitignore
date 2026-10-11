@@ -2,6 +2,9 @@ __pycache__/
 *.py[cod]
 .venv/
 .env
+.secrets/
+*.key
+data/
 .DS_Store
 Thumbs.db
 *.wav

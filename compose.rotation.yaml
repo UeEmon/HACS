@@ -1,0 +1,25 @@
+services:
+  hacs:
+    environment:
+      HACS_ROTATION: "${HACS_ROTATION:-daily}"
+      HACS_KEY_STORE: /keydata/keys.sqlite3
+      HACS_KEY_CREATE: "1"
+      HACS_ADMIN_TOKEN_FILE: /run/secrets/hacs_admin_token
+    secrets:
+      - hacs_admin_token
+    volumes:
+      - hacs_keys:/keydata
+  receiver:
+    environment:
+      HACS_ROTATION: "${HACS_ROTATION:-daily}"
+      HACS_KEY_STORE: /keydata/keys.sqlite3
+      HACS_KEY_READONLY: "1"
+    volumes:
+      - hacs_keys:/keydata:ro
+    depends_on:
+      - hacs
+secrets:
+  hacs_admin_token:
+    file: ./.secrets/admin.token
+volumes:
+  hacs_keys:

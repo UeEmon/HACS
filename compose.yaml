@@ -6,6 +6,8 @@ services:
     restart: unless-stopped
     read_only: true
     cap_drop: [ALL]
+    volumes:
+      - hacs_data:/data
   receiver:
     build: .
     command: ["python", "receiver_server.py"]
@@ -16,3 +18,5 @@ services:
     restart: unless-stopped
     read_only: true
     cap_drop: [ALL]
+volumes:
+  hacs_data:
