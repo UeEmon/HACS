@@ -1,0 +1,71 @@
+{
+  "profile_version": "HACS-RADIO-v1",
+  "name": "Hitachi Kokusai Electric LRT-35C HF transmitter public-document study",
+  "backend": "dry_run",
+  "radio": {
+    "manufacturer": "Hitachi Kokusai Electric (public-document attribution)",
+    "model": "LRT-35C",
+    "connector": null,
+    "audio_signal_pin": null,
+    "audio_return_pin": null,
+    "ptt_signal_pin": null,
+    "ptt_return_pin": null
+  },
+  "audio_input": {
+    "host_output_device": null,
+    "balanced": null,
+    "input_impedance_ohms": null,
+    "nominal_input_vrms": null,
+    "maximum_input_vrms": null,
+    "passband_hz": null,
+    "galvanic_isolation": null
+  },
+  "ptt": {
+    "method": "unconfigured",
+    "active_polarity": null,
+    "open_circuit_voltage_v": null,
+    "sink_current_ma": null,
+    "galvanic_isolation": null,
+    "independent_watchdog": null
+  },
+  "timing": {
+    "lead_seconds": 0.3,
+    "tail_seconds": 0.2,
+    "max_ptt_seconds": 5.0
+  },
+  "sample_metadata": {
+    "implementation_status": "dry_run_only",
+    "hardware_verified": false,
+    "review_date_jst": "2026-10-12",
+    "radio_type": "HF transmitter, as explicitly named in source",
+    "source": "https://www.mod.go.jp/msdf/bukei/zd/nyuusatsu/K-31-1624-0039.pdf",
+    "source_page_1_based": 6,
+    "source_row": 118,
+    "source_type": "public maintenance solicitation list, not an interface specification",
+    "documentation": "docs/radio-samples/kokusai-lrt.md",
+    "variant": "LRT-35C only; no specification inheritance to LRT-35B or LRT-20 variants",
+    "timing_values": "HACS simulated defaults, not manufacturer timing specifications"
+  },
+  "transport_candidates": {
+    "analog_audio_discrete_ptt": {
+      "supported": null,
+      "pinout": null,
+      "audio_input_vrms": null,
+      "ptt_electrical_type": null
+    },
+    "ethernet": {
+      "supported": null,
+      "control_protocol": null,
+      "audio_protocol": null
+    },
+    "serial": {
+      "supported": null,
+      "electrical_standard": null,
+      "command_format": null
+    },
+    "mil_std_1553": {
+      "supported": null,
+      "icd": null
+    }
+  }
+}

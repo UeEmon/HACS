@@ -198,6 +198,8 @@ JSONの `status` は `alert`（自局一致）、`other_station`（他局）、`
 
 ## 実機接続の設計
 
+[LRTシリーズの公開資料確認](docs/radio-samples/kokusai-lrt.md)ではLRT-20系・LRT-35CのHF送信機表記を確認し、LRT-35C用ドライラン設定を記載しています（接続仕様未確認）。
+
 [国際電気・日立国際電気製の公開資料確認](docs/radio-samples/kokusai-hitachi-hf.md)ではHRC-121/122のHF機・製造会社表記を確認し、HRC-122用のドライランサンプルを記載しています。接続仕様本体は未確認です。
 
 公開取扱説明書に基づく [IC-7300のUSB音声・RTS接続サンプル](docs/radio-samples/icom-ic7300-usb.md)を追加しています（実機未検証）。

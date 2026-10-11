@@ -77,3 +77,7 @@ python3 radio_dry_run.py --profile radio_templates/hitachi-hrc122-dry-run.json -
 [4] 防衛装備庁 廃止された防衛省仕様書一覧: https://www.mod.go.jp/atla/dsp/haishi.html
 
 確認日: 2026-10-12（JST）。調達公示の掲載は現在の製造・販売・使用状況の保証ではありません。実機・RF・相手デコーダの試験は未実施です。
+
+## LRT追加調査
+
+別の公開資料でLRT-20( )・LRT-35CのHF送信機表記を確認しました。[LRTシリーズの確認結果](kokusai-lrt.md)に、枝番ごとの掲載と未確認の接続仕様をまとめています。
