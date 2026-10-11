@@ -2,7 +2,7 @@
 
 メーカーを限定しないHF無線機へ接続するための、接続プロファイルとソフトウェアのひな形です。音声入力は**無線機側の送信用音声入力**を指し、HACS側は無線機に接続したホスト端末から音声を出力する設計です。
 
-現時点で実装した実行バックエンドはドライランだけです。音声デバイス・接点・CAT等の実機ドライバは差し替え用ひな形であり、実装・接続試験は未実施です。
+ドライランに加え、ホスト音声出力とシリアルRTS/DTRの汎用ドライバを実装しています。機種別接続回路、CAT・Ethernet・1553ドライバ、実機接続試験は未実施です。
 
 ## 接続テンプレート
 
@@ -54,7 +54,7 @@ flowchart TB
 | `radio_templates/generic.json` | 接続・電気条件・待ち時間の設定ひな形 |
 | `radio_dry_run.py` | 現在の機番号変換と生成音声を使い、実出力せず処理順序を確認するCLI |
 
-順序は「音声をPCM解析して一致確認 → 音声デバイス準備 → 鍵・期間確認 → PTT ON → 前待ち → 鍵・期間再確認 → 再生開始 → 音声デバイスの完了待ち → 後待ち → 音声停止 → PTT OFF」です。
+順序は「音声をPCM解析して一致確認 → 音声デバイス準備 → 鍵・期間確認 → PTT ON → 前待ち → 鍵・期間再確認 → 再生開始 → 音声デバイスの完了待ち → 後待ち → PTT OFF → 音声停止」です。
 
 音声長と前後待ち時間がPTT上限に収まらなければ、PTTを有効化する前に拒否します。デバイス準備・PTT有効化・再生等の例外時にも、音声停止とPTT解除を試みます。音声停止に失敗してもPTT解除を呼びます。完了した場合も相手の呼び出し成功は保証せず、`receiver_acknowledged`は`false`です。
 
@@ -81,6 +81,61 @@ docker compose exec hacs python radio_dry_run.py --tail 5501 --mode selcal32
 
 ## 適用範囲
 
-この追加で汎用の接続・処理テンプレートを作成しました。実機端子・電気条件の確定、音声・PTTドライバ実装、Web画面との実送信連携、RF・実受信装置での検証は引き続き未実施です。既存のWAV生成・再生・内部ループバック機能はそのまま利用できます。
+この追加で汎用の接続・処理テンプレートを作成しました。実機端子・電気条件の確定、機種固有ドライバ、Web画面との実送信連携、RF・実受信装置での検証は引き続き未実施です。既存のWAV生成・再生・内部ループバック機能はそのまま利用できます。
 
 関連: [システム構成図](system-architecture.md)、[二方式対応仕様](dual-mode-spec.md)。
+
+## ホスト音声・RTS/DTRドライバ
+
+`radio_drivers.py` に `SoundDeviceAudio` と `SerialPTT`、`radio_host.py` に操作CLIを追加しています。これらは汎用ドライバの実装であり、無線機との接続条件・実機動作は未検証です。既存Webコンテナとは独立して、無線機に接続したホスト端末で実行します。
+
+音声出力は48 kHz・16 bitのPCMを明示したデバイスへ出力します。モノラルまたは同じ信号を左右へ複製する2チャンネル出力を選択でき、既定デバイスへの自動フォールバックは行いません。PortAudioの完了通知を待ち、アンダーラン等は失敗として扱います。実際の出力レベルはOS・音声機器・接続回路で別途校正します。
+
+PTTはUSBシリアル等のRTSまたはDTRの一方を操作します。`active_high`はpySerialに設定する論理値の極性を表し、無線機入力端子の電圧を指定するものではありません。機種に適合する接点・絶縁・レベル変換回路を介し、選択した線を接続してください。シリアルポート開閉時のRTS/DTR変化はOS・ドライバに依存し、初期状態を指定しても瞬時の変化を完全には防げません。
+
+### 導入と設定
+
+任意の追加依存は `requirements-radio.txt` に固定します。Windowsでは`python`、Mac/Linuxでは必要に応じて`python3`で実行してください。
+
+```bash
+python -m pip install -r requirements-radio.txt
+python radio_host.py --list-audio
+```
+
+Windows/Macのpipパッケージは通常PortAudioを同梱します。Linuxは別途PortAudioが必要になる場合があります（Debian/Ubuntuでは`libportaudio2`）。Linuxのシリアルポート利用権限も環境に合わせて設定します。
+
+`radio_templates/host-audio-serial.json` をコピーし、次の項目を設定します。
+
+| 項目 | 値の例・条件 |
+|---|---|
+| `backend` | `host_audio_serial` |
+| `audio_input.host_output_device` | `--list-audio`の数値ID、または一意の完全一致デバイス名 |
+| `audio_input.channels` | `1`または`2` |
+| `ptt.method` | `serial_control_line` |
+| `ptt.serial_port` | Windowsの`COM3`、Macの`/dev/cu.…`、Linuxの`/dev/ttyUSB0`等の実際のポート |
+| `ptt.control_line` | `rts`または`dtr` |
+| `ptt.active_high` | 接続回路に応じて`true`または`false` |
+| `timing` | 実機の前後待ち・PTT上限 |
+
+設定確認だけの場合、音声・シリアルデバイスを開きません。
+
+```bash
+python radio_host.py --profile radio_templates/my-radio.json --tail 5501 --mode selcal32
+```
+
+実出力は次のコマンドで実行します。機種の接続仕様を満たすホスト・接続回路を使用してください。
+
+```bash
+python radio_host.py --profile radio_templates/my-radio.json --tail 5501 --mode selcal32 --execute
+```
+
+鍵付き運用では、ホストCLIにも送信部と一致する `HACS_ROTATION` と鍵設定が必要です。鍵・期間不一致や期間切替直前は開始を拒否します。共通鍵の別ホストへの自動配布は実装していません。
+
+PTT解除を音声デバイスの後処理より先に呼ぶため、音声デバイスの終了処理が遅れてもPTT解除処理を先に試みます。ただしOS停止・USB切断・ドライバのハング等に対する確実な電気的解除を保証するものではありません。ドライバの模擬試験は実施していますが、Windows/Mac/Linuxの実デバイス試験とDocker上の実出力は未実施です。Web画面からの実送信操作にもまだ接続していません。
+
+### API・依存の参照
+
+- sounddevice 0.5.6: https://python-sounddevice.readthedocs.io/en/0.5.6/installation.html
+- RawOutputStream: https://python-sounddevice.readthedocs.io/en/0.5.6/api/raw-streams.html
+- pySerialのRTS/DTRと開閉時の制約: https://pyserial.readthedocs.io/en/latest/pyserial_api.html
+- 接続方式の追加検討: [Ethernet・MIL-STD-1553・シリアル](radio-transport-options.md)

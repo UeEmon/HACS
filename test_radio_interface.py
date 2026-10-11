@@ -27,7 +27,7 @@ class RadioInterfaceTests(unittest.TestCase):
         interface=RadioInterface(Audio(events),DryRunPTT(events),clock=lambda:now[0],sleep=wait)
         result=interface.run(self.wav,'EM-DL')
         self.assertFalse(result['receiver_acknowledged'])
-        self.assertEqual([e['event'] for e in events],['audio_prepare','ptt_on_simulated','wait','audio_start','audio_complete_simulated','wait','audio_stop','ptt_off_simulated'])
+        self.assertEqual([e['event'] for e in events],['audio_prepare','ptt_on_simulated','wait','audio_start','audio_complete_simulated','wait','ptt_off_simulated','audio_stop'])
         self.assertAlmostEqual(now[0],2.7)
 
     def test_invalid_signal_and_budget_never_key_ptt(self):
@@ -48,7 +48,7 @@ class RadioInterfaceTests(unittest.TestCase):
                 raise RuntimeError('stop failed')
         interface=RadioInterface(Audio(events),DryRunPTT(events),sleep=lambda s:None)
         with self.assertRaises(RuntimeError):interface.run(self.wav,'EM-DL')
-        self.assertEqual(events[-1]['event'],'ptt_off_simulated')
+        self.assertEqual(events[-2]['event'],'ptt_off_simulated')
         self.assertFalse(interface._lock.locked())
 
     def test_activation_failure_still_release(self):
@@ -59,7 +59,7 @@ class RadioInterfaceTests(unittest.TestCase):
                 raise RuntimeError('activation partially failed')
         interface=RadioInterface(DryRunAudio(events),PTT(events),sleep=lambda s:None)
         with self.assertRaises(RuntimeError):interface.run(self.wav,'EM-DL')
-        self.assertEqual(events[-1]['event'],'ptt_off_simulated')
+        self.assertEqual(events[-2]['event'],'ptt_off_simulated')
 
     def test_timeout_and_reentrant_attempt(self):
         events=[]
@@ -67,7 +67,7 @@ class RadioInterfaceTests(unittest.TestCase):
             def wait_complete(self, timeout_seconds):return False
         interface=RadioInterface(Audio(events),DryRunPTT(events),sleep=lambda s:None)
         with self.assertRaises(TimeoutError):interface.run(self.wav,'EM-DL')
-        self.assertEqual(events[-1]['event'],'ptt_off_simulated')
+        self.assertEqual(events[-2]['event'],'ptt_off_simulated')
         interface._lock.acquire()
         try:
             with self.assertRaises(RuntimeError):interface.run(self.wav,'EM-DL')
@@ -79,7 +79,7 @@ class RadioInterfaceTests(unittest.TestCase):
         interface=RadioInterface(DryRunAudio(events),DryRunPTT(events),clock=lambda:now[0],sleep=delayed_wait)
         with self.assertRaises(TimeoutError):interface.run(self.wav,'EM-DL')
         self.assertNotIn('audio_start',[e['event'] for e in events])
-        self.assertEqual(events[-1]['event'],'ptt_off_simulated')
+        self.assertEqual(events[-2]['event'],'ptt_off_simulated')
 
     def test_epoch_guard_failure_before_playback(self):
         events=[];checks=[]
@@ -89,7 +89,7 @@ class RadioInterfaceTests(unittest.TestCase):
         interface=RadioInterface(DryRunAudio(events),DryRunPTT(events),sleep=lambda s:None)
         with self.assertRaises(ValueError):interface.run(self.wav,'EM-DL',guard=guard)
         self.assertNotIn('audio_start',[e['event'] for e in events])
-        self.assertEqual(events[-1]['event'],'ptt_off_simulated')
+        self.assertEqual(events[-2]['event'],'ptt_off_simulated')
 
     def test_profiles_and_dry_run_both_modes(self):
         profile=json.loads(Path('radio_templates/generic.json').read_text())
@@ -99,5 +99,5 @@ class RadioInterfaceTests(unittest.TestCase):
                 self.assertTrue(result['dry_run'])
                 self.assertFalse(result['physical_output'])
                 self.assertEqual(result['code'],code)
-                self.assertEqual(result['events'][-1]['event'],'ptt_off_simulated')
+                self.assertEqual(result['events'][-2]['event'],'ptt_off_simulated')
             with self.assertRaises(ValueError):run({**profile,'backend':'live'},'5501')

@@ -109,11 +109,11 @@ class RadioInterface:
                 if self.clock() >= deadline:
                     raise TimeoutError('PTT上限を超えました。')
             finally:
-                # Attempt PTT release even if preparation/start/stop raises.
+                # Drop PTT first so audio-driver cleanup cannot delay release.
                 try:
-                    self.audio.stop()
-                finally:
                     self.ptt.release()
+                finally:
+                    self.audio.stop()
             return {'status':'sequence_completed', 'mode':mode,
                     'code':code[:2]+'-'+code[2:], 'duration_seconds':duration,
                     'receiver_acknowledged':False}

@@ -4,7 +4,7 @@ HACS original code and accompanying documentation are licensed under Apache-2.0.
 
 ## Application dependencies
 
-HACS currently uses Python standard-library modules and local HACS modules; no third-party pip packages or bundled JavaScript frameworks are required at runtime.
+HACS web services use Python standard-library modules and local HACS modules; no third-party pip packages or bundled JavaScript frameworks are required by the web containers. Optional host audio/PTT drivers require additional packages listed in `requirements-radio.txt`.
 
 - **Python 3.12** (container runtime): Python Software Foundation License Version 2 and the applicable notices for incorporated components. Preserve the runtime's license and copyright notices when redistributing it. Official terms: https://docs.python.org/3.12/license.html
 - **SQLite** (accessed through Python's `sqlite3` module): upstream SQLite is dedicated to the public domain. Reference: https://www.sqlite.org/copyright.html
@@ -22,3 +22,9 @@ Official image source and maintenance information: https://github.com/docker-lib
 Docker Desktop is separately licensed under Docker's subscription agreement; it is not included in HACS. See https://docs.docker.com/subscription-billing/desktop-license/ .
 
 External standards and reference documents linked from the documentation retain the rights and terms of their publishers. Listing a reference does not apply Apache-2.0 to that document or grant rights to third-party names and logos.
+
+## Optional host drivers
+
+- sounddevice 0.5.6: MIT. https://github.com/spatialaudio/python-sounddevice/blob/master/LICENSE
+- pySerial 3.5: BSD-3-Clause, with upstream additional notices for some files. https://github.com/pyserial/pyserial/blob/master/LICENSE.txt
+- sounddevice additionally uses CFFI and PortAudio. Their applicable licenses and dependency notices must be preserved if those packages or native libraries are redistributed. Installing the host drivers does not relicense their dependencies under Apache-2.0.
