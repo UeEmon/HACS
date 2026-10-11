@@ -1,0 +1,36 @@
+{
+  "profile_version": "HACS-RADIO-v1",
+  "name": "Generic HF radio template",
+  "backend": "dry_run",
+  "radio": {
+    "manufacturer": null,
+    "model": null,
+    "connector": null,
+    "audio_signal_pin": null,
+    "audio_return_pin": null,
+    "ptt_signal_pin": null,
+    "ptt_return_pin": null
+  },
+  "audio_input": {
+    "host_output_device": null,
+    "balanced": null,
+    "input_impedance_ohms": null,
+    "nominal_input_vrms": null,
+    "maximum_input_vrms": null,
+    "passband_hz": null,
+    "galvanic_isolation": null
+  },
+  "ptt": {
+    "method": "unconfigured",
+    "active_polarity": null,
+    "open_circuit_voltage_v": null,
+    "sink_current_ma": null,
+    "galvanic_isolation": null,
+    "independent_watchdog": null
+  },
+  "timing": {
+    "lead_seconds": 0.3,
+    "tail_seconds": 0.2,
+    "max_ptt_seconds": 5.0
+  }
+}
