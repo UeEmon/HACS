@@ -6,7 +6,7 @@ import json
 import os
 import threading
 from receiver import MAX_BYTES, decode_wav
-from tail_mapping import VERSION, tail_to_selcal, selcal_to_tail, validate_tail
+from tail_mapping import VERSION, tail_to_selcal, selcal_to_tail, validate_tail, describe_tail
 
 class Handler(BaseHTTPRequestHandler):
     analysis_lock = threading.Lock()
@@ -25,6 +25,15 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         if urlparse(self.path).path == '/':
             return self.reply(200,Path(__file__).with_name('receiver.html').read_bytes(),'text/html; charset=utf-8')
+        if urlparse(self.path).path == '/api/convert':
+            query = parse_qs(urlparse(self.path).query, keep_blank_values=True)
+            try:
+                if ('tail_number' in query) == ('code' in query):
+                    raise ValueError('tail_number または code のどちらか一方を指定してください。')
+                result = describe_tail(query['tail_number'][0]) if 'tail_number' in query else describe_tail(selcal_to_tail(query['code'][0]))
+            except ValueError as exc:
+                return self.reply(400, {'error': str(exc)})
+            return self.reply(200, result)
         self.reply(404,{'error':'Not found'})
 
     def do_POST(self):
