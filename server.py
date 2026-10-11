@@ -8,13 +8,16 @@ from presets import Presets
 from preset_exports import build_list, csv_bytes
 import sqlite3
 import key_admin
-from wav_context import attach
+from wav_context import attach, read as read_context
+from receiver import decode_wav, MAX_BYTES
+import threading
 import json
 import os
 
 class Handler(BaseHTTPRequestHandler):
     mapping = None
     presets = None
+    loopback_lock = threading.Lock()
 
     def snapshot(self):
         return (self.mapping or configured_mapping()).snapshot()
@@ -34,6 +37,8 @@ class Handler(BaseHTTPRequestHandler):
         url = urlparse(self.path)
         if url.path == '/':
             return self.reply(200, 'text/html; charset=utf-8', Path(__file__).with_name('index.html').read_bytes())
+        if url.path == '/loopback_ui.js':
+            return self.reply(200, 'text/javascript; charset=utf-8', Path(__file__).with_name('loopback_ui.js').read_bytes())
         if url.path == '/keys_ui.js':
             return self.reply(200, 'text/javascript; charset=utf-8', Path(__file__).with_name('keys_ui.js').read_bytes())
         if url.path == '/presets_ui.js':
@@ -115,8 +120,47 @@ class Handler(BaseHTTPRequestHandler):
             return self.reply(200, 'audio/wav', body, extra)
         self.reply(404, 'text/plain', b'Not found')
 
+    def do_loopback(self, url):
+        if not self.loopback_lock.acquire(blocking=False):
+            return self.reply(409, 'application/json', b'{"error":"Loopback check already running"}')
+        try:
+            query = parse_qs(url.query, keep_blank_values=True)
+            snapshot = self.snapshot()
+            snapshot.check_expected(query.get('period_id', [None])[0], query.get('key_id', [None])[0])
+            mode = query.get('mode', ['selcal16'])[0]
+            tail = query.get('tail_number', [''])[0]
+            expected = snapshot.to_code(tail, mode)
+            size = int(self.headers.get('Content-Length', '0'))
+            if not 0 < size <= MAX_BYTES:
+                return self.reply(413, 'application/json', b'{"error":"WAV must be 1 byte to 2 MB"}')
+            if self.headers.get('Content-Type', '').split(';')[0].strip() != 'audio/wav':
+                return self.reply(415, 'application/json', b'{"error":"audio/wav required"}')
+            self.connection.settimeout(10)
+            payload = self.rfile.read(size)
+            if len(payload) != size:
+                raise ValueError('WAVの音声データが途中で切れています。')
+            context = read_context(payload)
+            if snapshot.period_id and context is None:
+                raise ValueError('現在の鍵と期間で生成したWAVが必要です。')
+            if context:
+                snapshot.check_expected(context.get('period_id'), context.get('key_id'))
+            detection = decode_wav(payload, expected, mode)
+            passed = len(detection['calls']) == 1 and detection['calls'][0]['matched']
+            # Reject a result if the key or period changed during waveform analysis.
+            self.snapshot().check_expected(snapshot.period_id or '', snapshot.metadata()['key_id'] or '')
+            result = {**snapshot.describe(tail, mode), 'passed':passed, 'detection':detection,
+                      'scope':'internal_pcm_loopback'}
+            return self.reply(200, 'application/json; charset=utf-8', json.dumps(result, ensure_ascii=False).encode())
+        except (ValueError, TypeError) as exc:
+            return self.reply(400, 'application/json; charset=utf-8', json.dumps({'error':str(exc)}, ensure_ascii=False).encode())
+        finally:
+            self.loopback_lock.release()
+
     def do_POST(self):
-        path = urlparse(self.path).path
+        url = urlparse(self.path)
+        if url.path == '/api/loopback':
+            return self.do_loopback(url)
+        path = url.path
         if path not in ('/api/presets','/api/keys'):
             return self.reply(404, 'application/json', b'{}')
         origin = self.headers.get('Origin')
