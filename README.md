@@ -94,6 +94,8 @@ python3 selcal.py --tail 5501 --output HACS-5501.wav
 
 詳細と一意性の説明: [機番号変換アルゴリズム](docs/tail-number-mapping.md)。
 
+公開仕様との照合結果: [SELCAL互換性確認](docs/selcal-compatibility.md)。従来16音の形式とデジタル波形を確認済みですが、実機設定コードの一致と実機相互接続は未確認、SELCAL 32の追加16音は未対応です。
+
 ## 実装仕様
 
 | 項目 | 値 |
