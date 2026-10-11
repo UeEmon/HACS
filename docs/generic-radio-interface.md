@@ -139,3 +139,7 @@ PTT解除を音声デバイスの後処理より先に呼ぶため、音声デ�
 - RawOutputStream: https://python-sounddevice.readthedocs.io/en/0.5.6/api/raw-streams.html
 - pySerialのRTS/DTRと開閉時の制約: https://pyserial.readthedocs.io/en/latest/pyserial_api.html
 - 接続方式の追加検討: [Ethernet・MIL-STD-1553・シリアル](radio-transport-options.md)
+
+## 公開資料に基づく機種別サンプル
+
+[アイコムIC-7300：USB音声・USB SEND RTS](radio-samples/icom-ic7300-usb.md)を用意しています。手動設定・暫定待ち時間・実機未確認項目を記載しています。
