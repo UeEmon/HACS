@@ -1,0 +1,23 @@
+services:
+  radio-emulator:
+    build: .
+    command: ["python", "emulator_server.py"]
+    environment:
+      PORT: "8789"
+      HACS_EMULATOR_ROLE: radio
+      HACS_AIRCRAFT_URL: http://aircraft-emulator:8790
+    ports: ["127.0.0.1:8789:8789"]
+    read_only: true
+    cap_drop: [ALL]
+    restart: unless-stopped
+    depends_on: [aircraft-emulator]
+  aircraft-emulator:
+    build: .
+    command: ["python", "emulator_server.py"]
+    environment:
+      PORT: "8790"
+      HACS_EMULATOR_ROLE: aircraft
+    ports: ["127.0.0.1:8790:8790"]
+    read_only: true
+    cap_drop: [ALL]
+    restart: unless-stopped

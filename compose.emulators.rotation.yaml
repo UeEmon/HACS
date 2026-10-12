@@ -1,0 +1,15 @@
+services:
+  radio-emulator:
+    environment:
+      HACS_ROTATION: "${HACS_ROTATION:-daily}"
+      HACS_KEY_STORE: /keydata/keys.sqlite3
+      HACS_KEY_READONLY: "1"
+    volumes: ["hacs_keys:/keydata:ro"]
+    depends_on: [hacs]
+  aircraft-emulator:
+    environment:
+      HACS_ROTATION: "${HACS_ROTATION:-daily}"
+      HACS_KEY_STORE: /keydata/keys.sqlite3
+      HACS_KEY_READONLY: "1"
+    volumes: ["hacs_keys:/keydata:ro"]
+    depends_on: [hacs]

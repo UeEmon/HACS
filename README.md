@@ -259,3 +259,13 @@ docker compose up --build -d
   https://slcaa.gov.sl/wp-content/uploads/2024/05/PART-10C-COMMUNICATION-SYSTEMS-5-FEB-24.pdf
 
 この試作版は認証済みの航空地上通信装置ではありません。
+
+### 無線機・航空機受信装置エミュレータ
+
+別コンテナで模擬PTT・WAV転送と航空機の自機呼び出し判定を実行できます。SELCAL 16/32、共通鍵とJST自動更新に対応します。
+
+```sh
+docker compose -f compose.yaml -f compose.emulators.yaml up -d --build
+```
+
+無線機画面: http://localhost:8789 / 航空機画面: http://localhost:8790 。操作・鍵共有・APIは[エミュレータ手順](docs/emulators.md)を参照してください。

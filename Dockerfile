@@ -8,5 +8,6 @@ COPY selcal.py tail_mapping.py key_store.py key_admin.py wav_context.py rotation
 RUN mkdir -p /data /keydata && chown 65534:65534 /data /keydata && chmod 700 /keydata
 ENV HOST=0.0.0.0 PORT=8787 PYTHONDONTWRITEBYTECODE=1 HACS_DATA_DIR=/data
 USER 65534:65534
-EXPOSE 8787 8788
+COPY emulator_server.py emulator.html emulator_ui.js ./
+EXPOSE 8787 8788 8789 8790
 CMD ["python", "server.py"]
