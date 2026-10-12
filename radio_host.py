@@ -26,14 +26,15 @@ def validate_profile(profile):
     return output,switch,Timing(**timing)
 
 
-def run(profile, tail, mode='selcal16', level=0.5, execute=False):
+def run(profile, tail, mode='selcal16', level=None, execute=False):
     audio,ptt,timing=validate_profile(profile)
     snapshot=configured_mapping().snapshot()
     code=snapshot.to_code(tail,mode)
+    level=profile.get('output_level',0.5) if level is None else level
     payload=make_wav(code,level,mode)
     if timing.lead_seconds+2.2+timing.tail_seconds>=timing.max_ptt_seconds:
         raise ValueError('PTT上限が信号長と前後待ち時間より短すぎます。')
-    summary={**snapshot.describe(tail,mode),'audio_device':audio.device,'audio_channels':audio.channels,
+    summary={**snapshot.describe(tail,mode),'audio_device':audio.device,'audio_channels':audio.channels,'output_level':level,
              'serial_port':ptt.port,'ptt_line':ptt.line,'ptt_active_high':ptt.active_high,
              'receiver_acknowledged':False}
     if not execute:
@@ -54,7 +55,7 @@ if __name__=='__main__':
     parser.add_argument('--profile')
     parser.add_argument('--tail')
     parser.add_argument('--mode',choices=['selcal16','selcal32'],default='selcal16')
-    parser.add_argument('--level',type=float,default=0.5)
+    parser.add_argument('--level',type=float,default=None,help='出力レベル（省略時はプロファイル値、未設定なら0.5）')
     parser.add_argument('--execute',action='store_true',help='実音声出力とPTT操作を実行')
     args=parser.parse_args()
     try:

@@ -8,7 +8,7 @@ from rotation import configured_mapping
 from selcal import make_wav
 
 
-def run(profile, tail, mode='selcal16', level=0.5):
+def run(profile, tail, mode='selcal16', level=None):
     if not isinstance(profile, dict) or profile.get('profile_version') != 'HACS-RADIO-v1':
         raise ValueError('プロファイル形式が不正です。')
     if profile.get('backend') != 'dry_run':
@@ -18,6 +18,7 @@ def run(profile, tail, mode='selcal16', level=0.5):
         raise ValueError('前後待ち時間とPTT上限を指定してください。')
     snapshot = configured_mapping().snapshot()
     code = snapshot.to_code(tail, mode)
+    level = profile.get('output_level',0.5) if level is None else level
     payload = make_wav(code, level, mode)
     events = []
     def guard():
@@ -35,7 +36,7 @@ if __name__ == '__main__':
     parser.add_argument('--profile',default=str(Path(__file__).parent/'radio_templates/generic.json'))
     parser.add_argument('--tail',required=True)
     parser.add_argument('--mode',choices=['selcal16','selcal32'],default='selcal16')
-    parser.add_argument('--level',type=float,default=0.5)
+    parser.add_argument('--level',type=float,default=None,help='出力レベル（省略時はプロファイル値、未設定なら0.5）')
     args = parser.parse_args()
     try:
         profile = json.loads(Path(args.profile).read_text(encoding='utf-8'))

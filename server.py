@@ -5,6 +5,7 @@ from urllib.parse import urlparse, parse_qs
 from selcal import make_wav, validate, tones_for
 from rotation import configured_mapping
 from presets import Presets
+from radio_settings import RadioSettings
 from preset_exports import build_list, csv_bytes
 import sqlite3
 import key_admin
@@ -37,6 +38,14 @@ class Handler(BaseHTTPRequestHandler):
         url = urlparse(self.path)
         if url.path == '/':
             return self.reply(200, 'text/html; charset=utf-8', Path(__file__).with_name('index.html').read_bytes())
+        if url.path == '/radio_settings_ui.js':
+            return self.reply(200, 'text/javascript; charset=utf-8', Path(__file__).with_name('radio_settings_ui.js').read_bytes())
+        if url.path == '/api/radio-settings':
+            try:
+                data=RadioSettings().read()
+            except (OSError,sqlite3.Error,ValueError):
+                return self.reply(503,'application/json',b'{"error":"Radio settings unavailable"}')
+            return self.reply(200,'application/json; charset=utf-8',json.dumps(data,ensure_ascii=False).encode())
         if url.path == '/security_ui.js':
             return self.reply(200, 'text/javascript; charset=utf-8', Path(__file__).with_name('security_ui.js').read_bytes())
         if url.path == '/tabs_ui.js':
@@ -165,7 +174,7 @@ class Handler(BaseHTTPRequestHandler):
         if url.path == '/api/loopback':
             return self.do_loopback(url)
         path = url.path
-        if path not in ('/api/presets','/api/keys','/api/security'):
+        if path not in ('/api/presets','/api/keys','/api/security','/api/radio-settings'):
             return self.reply(404, 'application/json', b'{}')
         origin = self.headers.get('Origin')
         if origin and (urlparse(origin).scheme not in ('http','https') or urlparse(origin).netloc != self.headers.get('Host')):
@@ -186,6 +195,9 @@ class Handler(BaseHTTPRequestHandler):
             data = json.loads(self.rfile.read(size))
             if not isinstance(data, dict):
                 raise ValueError('JSONオブジェクトが必要です。')
+            if path == '/api/radio-settings':
+                result=RadioSettings().save(data.get('profile'),data.get('revision'))
+                return self.reply(200,'application/json; charset=utf-8',json.dumps(result,ensure_ascii=False).encode())
             if path == '/api/security':
                 result = key_admin.writable_store().set_policy(data.get('cadence'),data.get('expected_revision'))
                 return self.reply(200,'application/json',json.dumps(result).encode())
