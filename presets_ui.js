@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
-  const select=document.getElementById('preset'), name=document.getElementById('preset-name');
-  const tail=document.getElementById('code'), mode=document.getElementById('mode');
+  const select=document.getElementById('preset-manage'), txSelect=document.getElementById('preset'), name=document.getElementById('preset-name');
+  const tail=document.getElementById('preset-tail'), mode=document.getElementById('preset-mode');
   const add=document.getElementById('preset-add'), save=document.getElementById('preset-save');
   const remove=document.getElementById('preset-delete'), message=document.getElementById('preset-status');
   let items=[], busy=false;
@@ -11,7 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
   async function load(selected='') {
     const response=await fetch('/api/presets'); const data=await response.json();
     if (!response.ok) throw Error(data.error || 'プリセットを取得できませんでした。');
-    items=data.presets; select.replaceChildren(new Option('手入力／新規登録',''));
+    items=data.presets; const txSelected=txSelect.value; txSelect.replaceChildren(new Option('手入力','')); for(const item of items)txSelect.add(new Option(item.name+' / '+item.tail_number,String(item.id)));txSelect.value=txSelected; select.replaceChildren(new Option('手入力／新規登録',''));
     for (const item of items) select.add(new Option(item.name+' / '+item.tail_number+' / '+(item.mode==='selcal32'?'32音':'16音'),String(item.id)));
     select.value=String(selected); controls();
   }
@@ -20,11 +20,12 @@ document.addEventListener('DOMContentLoaded', () => {
     if (item) {
       if (tail.disabled || mode.disabled) {select.value='';controls();return;}
       tail.value=item.tail_number; mode.value=item.mode; name.value=item.name;
-      mode.dispatchEvent(new Event('change')); tail.dispatchEvent(new Event('input'));
-      message.textContent='プリセットを選択しました。現在の受信設定コードを確認して音声を生成してください。';
+
+      message.textContent='プリセットを選択しました。内容を編集して保存できます。';
     } else name.value='';
     controls();
   };
+  txSelect.onchange=()=>{const item=items.find(x=>String(x.id)===txSelect.value);const t=document.getElementById('code'),m=document.getElementById('mode');if(!item)return;if(t.disabled||m.disabled){txSelect.value='';return;}t.value=item.tail_number;m.value=item.mode;m.dispatchEvent(new Event('change'));t.dispatchEvent(new Event('input'));};
   async function mutate(action) {
     if (busy) return;
     if (action==='delete' && !window.confirm('選択したプリセットを削除しますか？')) return;

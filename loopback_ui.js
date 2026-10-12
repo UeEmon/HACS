@@ -22,6 +22,7 @@ document.addEventListener('DOMContentLoaded',()=>{
       const result=await response.json();if (!response.ok) throw Error(result.error||'確認に失敗しました。');
       await hacsRotation.assertPeriod(result.period_id||'',0,result.key_id||'');
       if (currentRevision!==revision) return;
+      window.dispatchEvent(new CustomEvent('hacs-loopback-result',{detail:result}));
       const detected=result.detection.calls.map(call=>call.code).join(', ')||'未検出';
       status.textContent=(result.passed?'合格：生成音声と受信検出コードが一致しました。':'不合格：生成音声を確認してください。')+
         '\n機番号: '+result.tail_number+' / 期待コード: '+result.selcal_code+' / 検出: '+detected+

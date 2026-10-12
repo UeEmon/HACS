@@ -37,6 +37,8 @@ class Handler(BaseHTTPRequestHandler):
         url = urlparse(self.path)
         if url.path == '/':
             return self.reply(200, 'text/html; charset=utf-8', Path(__file__).with_name('index.html').read_bytes())
+        if url.path == '/tabs_ui.js':
+            return self.reply(200, 'text/javascript; charset=utf-8', Path(__file__).with_name('tabs_ui.js').read_bytes())
         if url.path == '/loopback_ui.js':
             return self.reply(200, 'text/javascript; charset=utf-8', Path(__file__).with_name('loopback_ui.js').read_bytes())
         if url.path == '/keys_ui.js':

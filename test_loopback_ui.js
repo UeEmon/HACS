@@ -4,7 +4,7 @@ const assert=require('node:assert/strict'), fs=require('node:fs'), vm=require('n
   const document={addEventListener:(name,fn)=>{if(name==='DOMContentLoaded')fn()},getElementById:id=>id==='loopback'?button:status};
   let calls=0, result={passed:true,tail_number:'5501',selcal_code:'EM-DL',detection:{calls:[{code:'EM-DL',pulse_seconds:[1,1],gap_seconds:.2}],sample_rate:48000,duration_seconds:2.2}};
   let resolve, deferred=false;
-  const context={document,window:{addEventListener:(name,fn)=>listeners[name]=fn},URLSearchParams,
+  const context={document,CustomEvent:class{constructor(type,options){this.type=type;this.detail=options.detail;}},window:{addEventListener:(name,fn)=>listeners[name]=fn,dispatchEvent:e=>listeners[e.type]?.(e)},URLSearchParams,
     hacsRotation:{assertPeriod:async()=>{}},fetch:async(url,options)=>{
       calls++;
       if(!options)return {blob:async()=>Buffer.from('actual wav')};

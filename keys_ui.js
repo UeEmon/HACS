@@ -5,6 +5,8 @@ document.addEventListener('DOMContentLoaded', () => {
   let busy=false;
   async function operate(change) {
     if (busy) return;
+    const token=document.getElementById(change?'admin-token':'history-token');
+    const message=document.getElementById(change?'key-status':'history-key-status');
     if (!/^[0-9a-fA-F]{64}$/.test(token.value.trim())) {message.textContent='64桁の管理トークンを入力してください。';return;}
     if (change && !window.confirm('新しい共通鍵へ即時切替します。旧鍵の音声は使用できなくなります。共有ストアに接続した受信シミュレータも更新されます。実受信装置や別環境のコード更新は別途必要です。実行しますか？')) return;
     busy=true; rotate.disabled=history.disabled=true;
