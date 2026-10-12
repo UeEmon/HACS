@@ -283,3 +283,5 @@ docker compose -f compose.yaml -f compose.emulators.yaml up -d --build
 「無線機インターフェース」タブでは音声デバイス・シリアルPTT・タイミング・標準出力レベル（1〜90%）を保存し、ホスト用JSONを出力できます。保存は実接続・送信を行いません。[設定とホストへの適用](docs/generic-radio-interface.md#web画面からの設定)を参照してください。
 
 無線機インターフェースの設計・資料収集・実装・試験に必要な項目は、[必要項目一覧と機種別記入票](docs/radio-interface-requirements.md)に整理しています。
+
+開発を引き継ぐ方は、[開発引き継ぎ書](docs/developer-handover.md)を最初に確認してください。
