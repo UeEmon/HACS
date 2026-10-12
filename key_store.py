@@ -43,10 +43,18 @@ class KeyStore:
     def read(self):
         try:
             with closing(sqlite3.connect(self.filename.resolve().as_uri()+('?mode=ro' if self.readonly else '?mode=rw'), uri=True, timeout=5)) as db, db:
+                db.execute('BEGIN')
                 row = db.execute('SELECT root,generation,updated FROM active WHERE id=1').fetchone()
+                info = {'security_revision':0}
+                if db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='security_policy'").fetchone():
+                    policy = db.execute('SELECT cadence,revision FROM security_policy WHERE id=1').fetchone()
+                    if policy:
+                        if policy[0] not in ('off','daily','weekly','monthly'):
+                            raise ValueError
+                        info.update(configured_cadence=policy[0], security_revision=policy[1])
                 if row is None or not isinstance(row[0], bytes) or len(row[0]) != 32:
                     raise ValueError
-                return row[0], {'key_generation':row[1], 'key_updated_utc':row[2]}
+                return row[0], {'key_generation':row[1], 'key_updated_utc':row[2], **info}
         except (sqlite3.Error, ValueError):
             raise ValueError('共有鍵ストアを読み込めません。鍵なし変換へは切り替えません。') from None
 
@@ -78,3 +86,37 @@ class KeyStore:
         except sqlite3.Error:
             raise ValueError('共通鍵の更新に失敗しました。') from None
         return {'key_id':key_id(root), 'key_generation':generation, 'key_updated_utc':now}
+
+
+    def set_policy(self, cadence, expected_revision):
+        if self.readonly:
+            raise ValueError('このサービスから秘匿設定は変更できません。')
+        if cadence not in ('off','daily','weekly','monthly') or type(expected_revision) is not int or expected_revision < 0:
+            raise ValueError('秘匿設定または設定世代が不正です。')
+        try:
+            with closing(sqlite3.connect(self.filename.resolve().as_uri()+'?mode=rw', uri=True, timeout=5)) as db, db:
+                db.execute('BEGIN IMMEDIATE')
+                if not db.execute('SELECT 1 FROM active WHERE id=1').fetchone():
+                    raise ValueError('共通鍵を初期化してください。')
+                db.execute('CREATE TABLE IF NOT EXISTS security_policy (id INTEGER PRIMARY KEY CHECK(id=1), cadence TEXT NOT NULL, revision INTEGER NOT NULL)')
+                db.execute('CREATE TABLE IF NOT EXISTS policy_events (revision INTEGER PRIMARY KEY, cadence TEXT NOT NULL, updated TEXT NOT NULL)')
+                row = db.execute('SELECT revision FROM security_policy WHERE id=1').fetchone()
+                revision = row[0] if row else 0
+                if revision != expected_revision:
+                    raise ValueError('設定は既に変更されています。状態を再取得してください。')
+                revision += 1
+                db.execute('INSERT OR REPLACE INTO security_policy VALUES(1,?,?)', (cadence,revision))
+                db.execute('INSERT INTO policy_events VALUES(?,?,?)', (revision,cadence,datetime.now(timezone.utc).isoformat()))
+        except sqlite3.Error:
+            raise ValueError('秘匿設定を保存できませんでした。') from None
+        return {'cadence':cadence, 'security_revision':revision}
+
+    def policy_events(self):
+        try:
+            with closing(sqlite3.connect(self.filename.resolve().as_uri()+'?mode=ro', uri=True, timeout=5)) as db:
+                if not db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='policy_events'").fetchone():
+                    return []
+                rows = db.execute('SELECT revision,cadence,updated FROM policy_events ORDER BY revision DESC LIMIT 100').fetchall()
+                return [dict(zip(('revision','cadence','updated_utc'),row)) for row in rows]
+        except sqlite3.Error:
+            raise ValueError('秘匿設定の更新履歴を読み込めません。') from None

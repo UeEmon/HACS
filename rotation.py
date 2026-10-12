@@ -135,19 +135,21 @@ class Snapshot:
 
 def configured_mapping():
     cadence = os.environ.get('HACS_ROTATION', 'off')
-    if cadence == 'off':
-        return Mapping()
-    if cadence not in ('daily','weekly','monthly'):
+    if cadence not in ('off','daily','weekly','monthly'):
         raise ValueError('HACS_ROTATIONはoff、daily、weekly、monthlyで指定してください。')
     store_path = os.environ.get('HACS_KEY_STORE')
     store = KeyStore(store_path, os.environ.get('HACS_KEY_READONLY') == '1') if store_path else None
     if store and store.filename.exists():
         root, info = store.read()
-        return Mapping(root, cadence, info)
+        cadence = info.pop('configured_cadence', cadence)
+        return Mapping(root if cadence != 'off' else None, cadence, info)
     if store and os.environ.get('HACS_KEY_CREATE') == '1':
         store.initialize(secrets.token_bytes(32))
-        root, info = store.read()
-        return Mapping(root, cadence, info)
+        return configured_mapping()
+    if store and store.readonly:
+        raise ValueError('共有鍵ストアの初期化を待っています。')
+    if cadence == 'off':
+        return Mapping()
     filename = os.environ.get('HACS_KEY_FILE')
     if not filename:
         raise ValueError('HACS_KEY_FILEが未設定です。自動更新を開始できません。')

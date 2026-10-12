@@ -4,7 +4,7 @@ import os
 from pathlib import Path
 import re
 
-from key_store import KeyStore
+from key_store import KeyStore, key_id
 
 
 def admin_token():
@@ -27,6 +27,6 @@ def authorized(header):
 
 def writable_store():
     filename = os.environ.get('HACS_KEY_STORE')
-    if not filename or os.environ.get('HACS_KEY_READONLY') == '1' or os.environ.get('HACS_ROTATION','off') == 'off':
-        raise ValueError('共通鍵管理には自動更新と書込み可能な共有鍵ストアが必要です。')
+    if not filename or os.environ.get('HACS_KEY_READONLY') == '1':
+        raise ValueError('共通鍵管理には書込み可能な共有鍵ストアが必要です。')
     return KeyStore(filename)

@@ -13,9 +13,10 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       const options={headers:{Authorization:'Bearer '+token.value.trim()}};
       if (change) {
-        const current=await hacsRotation.refresh();
+        const stateResponse=await fetch('/api/keys',{headers:options.headers});
+        const current=await stateResponse.json();if(!stateResponse.ok)throw Error(current.error||'鍵情報を取得できませんでした。');
         options.method='POST'; options.headers['Content-Type']='application/json';
-        options.body=JSON.stringify({action:'rotate',expected_key_id:current.key_id,reason:reason.value});
+        options.body=JSON.stringify({action:'rotate',expected_key_id:current.active_key_id,reason:reason.value});
       }
       const response=await fetch('/api/keys',options), data=await response.json();
       if (!response.ok) throw Error(data.error||'鍵管理操作に失敗しました。');
@@ -29,7 +30,8 @@ document.addEventListener('DOMContentLoaded', () => {
           row.textContent='世代 '+item.generation+' / '+item.key_id+' / '+item.updated_utc+' / '+item.reason;
           output.append(row);
         }
-        message.textContent='更新履歴を表示しました。日時はUTCです。';
+        for(const item of data.policy_events||[]){const row=document.createElement('p');row.textContent='秘匿設定 '+item.revision+' / '+item.cadence+' / '+item.updated_utc;output.append(row);}
+        message.textContent='鍵・秘匿設定の更新履歴を表示しました。日時はUTCです。';
       }
     } catch(error) {message.textContent=error.message;}
     finally {token.value='';busy=false;rotate.disabled=history.disabled=false;}

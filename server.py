@@ -37,6 +37,8 @@ class Handler(BaseHTTPRequestHandler):
         url = urlparse(self.path)
         if url.path == '/':
             return self.reply(200, 'text/html; charset=utf-8', Path(__file__).with_name('index.html').read_bytes())
+        if url.path == '/security_ui.js':
+            return self.reply(200, 'text/javascript; charset=utf-8', Path(__file__).with_name('security_ui.js').read_bytes())
         if url.path == '/tabs_ui.js':
             return self.reply(200, 'text/javascript; charset=utf-8', Path(__file__).with_name('tabs_ui.js').read_bytes())
         if url.path == '/loopback_ui.js':
@@ -50,7 +52,7 @@ class Handler(BaseHTTPRequestHandler):
                 if not key_admin.authorized(self.headers.get('Authorization')):
                     return self.reply(401,'application/json',b'{"error":"Administrator token required"}')
                 store = key_admin.writable_store()
-                data = {'events':store.events(), **self.snapshot().metadata()}
+                data = {'events':store.events(), 'policy_events':store.policy_events(), 'active_key_id':key_admin.key_id(store.read()[0]), **self.snapshot().metadata()}
             except ValueError as exc:
                 return self.reply(503,'application/json; charset=utf-8',json.dumps({'error':str(exc)},ensure_ascii=False).encode())
             return self.reply(200,'application/json',json.dumps(data).encode())
@@ -163,14 +165,14 @@ class Handler(BaseHTTPRequestHandler):
         if url.path == '/api/loopback':
             return self.do_loopback(url)
         path = url.path
-        if path not in ('/api/presets','/api/keys'):
+        if path not in ('/api/presets','/api/keys','/api/security'):
             return self.reply(404, 'application/json', b'{}')
         origin = self.headers.get('Origin')
         if origin and (urlparse(origin).scheme not in ('http','https') or urlparse(origin).netloc != self.headers.get('Host')):
             return self.reply(403,'application/json',b'{"error":"Cross-origin mutation refused"}')
         if self.headers.get('Content-Type','').split(';')[0].strip() != 'application/json':
             return self.reply(415,'application/json',b'{"error":"application/json required"}')
-        if path == '/api/keys':
+        if path in ('/api/keys','/api/security'):
             try:
                 if not key_admin.authorized(self.headers.get('Authorization')):
                     return self.reply(401,'application/json',b'{"error":"Administrator token required"}')
@@ -184,6 +186,9 @@ class Handler(BaseHTTPRequestHandler):
             data = json.loads(self.rfile.read(size))
             if not isinstance(data, dict):
                 raise ValueError('JSONオブジェクトが必要です。')
+            if path == '/api/security':
+                result = key_admin.writable_store().set_policy(data.get('cadence'),data.get('expected_revision'))
+                return self.reply(200,'application/json',json.dumps(result).encode())
             if path == '/api/keys':
                 if data.get('action') != 'rotate':
                     raise ValueError('共通鍵管理の操作はrotateで指定してください。')

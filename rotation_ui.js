@@ -18,7 +18,7 @@
         const response = await fetch('/api/rotation');
         const data = await response.json();
         if (!response.ok) throw Error(data.error || '更新状態を取得できませんでした。');
-        const changed = !state.known || state.period_id !== data.period_id || state.key_id !== data.key_id;
+        const changed = !state.known || state.period_id !== data.period_id || state.key_id !== data.key_id || state.security_revision !== data.security_revision;
         Object.assign(state, data, {known: true});
         render(data);
         if (changed) window.dispatchEvent(new Event('hacs-period-change'));
