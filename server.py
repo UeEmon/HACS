@@ -14,11 +14,69 @@ from receiver import decode_wav, MAX_BYTES
 import threading
 import json
 import os
+import re
+from radio_link import RadioHostClient, TransmitLog, HostUnavailable
+import transmit
 
 class Handler(BaseHTTPRequestHandler):
     mapping = None
     presets = None
+    radio_host = None
+    transmit_log = None
     loopback_lock = threading.Lock()
+
+    def host(self):
+        return self.radio_host or RadioHostClient()
+
+    def tlog(self):
+        return self.transmit_log or TransmitLog()
+
+    def json_reply(self, status, data):
+        self.reply(status, 'application/json; charset=utf-8', json.dumps(data, ensure_ascii=False).encode())
+        return True
+
+    def radio_get(self, path):
+        """Read-only radio host and transmit routes. Returns None if the path is not one of them."""
+        try:
+            if path == '/api/radio-host':
+                return self.json_reply(200, transmit.host_state(self.host()))
+            if path == '/api/radio-host/devices':
+                status, data = self.host().request('GET', '/v1/devices')
+                return self.json_reply(200 if status == 200 else 502, data)
+            if path == '/api/transmit/history':
+                return self.json_reply(200, {'records': self.tlog().list(200)})
+            m = re.fullmatch(r'/api/transmit/([0-9a-f-]{36})', path)
+            if m:
+                return self.json_reply(200, transmit.refresh(self.host(), self.tlog(), m.group(1)))
+        except KeyError as exc:
+            return self.json_reply(404, {'error': exc.args[0]})
+        except HostUnavailable as exc:
+            return self.json_reply(502, {'error': str(exc)})
+        except (OSError, sqlite3.Error):
+            return self.json_reply(503, {'error': '送信履歴の保存先を利用できません。'})
+        return None
+
+    def radio_post(self, path, data):
+        try:
+            if path == '/api/radio-host/apply':
+                profile = RadioSettings().read()['profile']
+                return self.json_reply(200, transmit.apply_profile(self.host(), profile, data.get('action')))
+            if path == '/api/transmit':
+                return self.json_reply(202, transmit.create(self.snapshot(), self.host(), self.tlog(), data))
+            m = re.fullmatch(r'/api/transmit/([0-9a-f-]{36})/cancel', path)
+            if m:
+                return self.json_reply(200, transmit.cancel(self.host(), self.tlog(), m.group(1)))
+        except KeyError as exc:
+            return self.json_reply(404, {'error': exc.args[0]})
+        except transmit.Conflict as exc:
+            return self.json_reply(409, {'error': str(exc)})
+        except HostUnavailable as exc:
+            return self.json_reply(502, {'error': str(exc)})
+        except (ValueError, TypeError) as exc:
+            return self.json_reply(400, {'error': str(exc)})
+        except (OSError, sqlite3.Error):
+            return self.json_reply(503, {'error': '送信履歴または設定の保存先を利用できません。'})
+        return self.json_reply(404, {'error': 'Not found'})
 
     def snapshot(self):
         return (self.mapping or configured_mapping()).snapshot()
@@ -89,6 +147,12 @@ class Handler(BaseHTTPRequestHandler):
             except (OSError, sqlite3.Error):
                 return self.reply(503, 'application/json; charset=utf-8', json.dumps({'error':'プリセット保存先を利用できません。'}).encode())
             return self.reply(200, 'application/json; charset=utf-8', json.dumps(data).encode())
+        if url.path in ('/transmit_ui.js', '/radio_host_ui.js'):
+            return self.reply(200, 'text/javascript; charset=utf-8', Path(__file__).with_name(url.path[1:]).read_bytes())
+        if url.path.startswith(('/api/radio-host', '/api/transmit')):
+            if self.radio_get(url.path) is None:
+                self.reply(404, 'text/plain', b'Not found')
+            return
         if url.path == '/rotation_ui.js':
             return self.reply(200, 'text/javascript; charset=utf-8', Path(__file__).with_name('rotation_ui.js').read_bytes())
         if url.path == '/api/rotation':
@@ -174,7 +238,8 @@ class Handler(BaseHTTPRequestHandler):
         if url.path == '/api/loopback':
             return self.do_loopback(url)
         path = url.path
-        if path not in ('/api/presets','/api/keys','/api/security','/api/radio-settings'):
+        radio = path in ('/api/radio-host/apply', '/api/transmit') or re.fullmatch(r'/api/transmit/[0-9a-f-]{36}/cancel', path)
+        if not radio and path not in ('/api/presets','/api/keys','/api/security','/api/radio-settings'):
             return self.reply(404, 'application/json', b'{}')
         origin = self.headers.get('Origin')
         if origin and (urlparse(origin).scheme not in ('http','https') or urlparse(origin).netloc != self.headers.get('Host')):
@@ -195,6 +260,8 @@ class Handler(BaseHTTPRequestHandler):
             data = json.loads(self.rfile.read(size))
             if not isinstance(data, dict):
                 raise ValueError('JSONオブジェクトが必要です。')
+            if radio:
+                return self.radio_post(path, data)
             if path == '/api/radio-settings':
                 result=RadioSettings().save(data.get('profile'),data.get('revision'))
                 return self.reply(200,'application/json; charset=utf-8',json.dumps(result,ensure_ascii=False).encode())

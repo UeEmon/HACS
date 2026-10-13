@@ -60,3 +60,17 @@ python3 e2e_check.py --token-file .secrets/admin.token --json e2e-keyed.json
 - 実際の`docker compose up --build`（Windows／macOS（Intel・Apple Silicon）／Linux）、コンテナ制限下での書き込み権限、Docker secretの読み取り
 - 実機ブラウザでの音声再生・WAV保存・通知音、iPad Safari
 - 実機の音声端子・PTT・RF送信、実受信装置との適合性
+
+## 追記：Web画面からの送信（同日）
+
+[連携設計](web-host-service-design.md)の実装後、同じイメージ相当構成の本体と、別プロセスで起動した無線機ホストサービス（ドライラン）で確認しました。
+
+| 確認 | 結果 |
+|---|---|
+| Python単体・結合試験 | 89件合格 |
+| Node画面ロジック試験 | 6本合格 |
+| `e2e_check.py --transmit`（通常構成） | 39/39合格 |
+| `e2e_check.py --transmit --token-file …`（共有鍵構成） | 53/53合格 |
+| ヘッドレスChromiumでの送信操作（PC・iPad・スマートフォン幅） | 30/30合格 |
+
+`--transmit`は、ホストに適用した設定がドライランでない場合は送信試験を行いません。

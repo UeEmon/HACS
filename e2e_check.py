@@ -8,7 +8,14 @@ Runs against already started services; it never controls a radio or PTT.
 The keyed run changes the cadence to weekly, rotates the shared key once and
 restores the original cadence. Run it only on a test installation.
 Creates one preset named "E2E試験 0001" and deletes it afterwards.
+
+  python3 e2e_check.py --transmit            # also exercise Web → radio host service
+
+--transmit applies the saved radio settings to the host service and sends calls
+through it. It refuses to send unless the applied profile is a dry run, so it never
+keys a real radio.
 """
+import time
 import argparse
 import io
 import json
@@ -162,16 +169,70 @@ def keyed_checks(H, RX, RADIO, AC, token, rot):
     check(f'cadence restored to {original}', s == 200, d)
 
 
+def transmit_checks(H, rot):
+    def wait(job_id, timeout=15):
+        end = time.time() + timeout
+        while time.time() < end:
+            s, j = js(f'{H}/api/transmit/{job_id}')
+            if j.get('status') in ('completed', 'failed', 'cancelled', 'rejected', 'submit_failed', 'unknown'):
+                return j
+            time.sleep(0.2)
+        return j
+    s, host = js(f'{H}/api/radio-host')
+    check('radio host reachable', s == 200 and host.get('reachable'), host.get('state'))
+    if not host.get('reachable'):
+        return
+    s, host = js(f'{H}/api/radio-host/apply', {'action': 'apply'})
+    check('apply saved settings to host', s == 200 and host.get('state') == 'idle', host)
+    if (host.get('profile') or {}).get('backend') != 'dry_run':
+        check('host profile is dry run (refusing to transmit)', False, (host.get('profile') or {}).get('backend'))
+        return
+    req_body = {'tail_number': '5501', 'mode': 'selcal16', 'period_id': rot.get('period_id') or '',
+                'key_id': rot.get('key_id') or '', 'confirm': True}
+    s, _ = js(f'{H}/api/transmit', {**req_body, 'confirm': False})
+    check('transmit without confirm refused', s == 400, s)
+    s, _ = js(f'{H}/api/transmit', req_body, headers={'Origin': 'http://evil.example'})
+    check('cross-origin transmit refused', s == 403, s)
+    s, job = js(f'{H}/api/transmit', req_body)
+    check('transmit accepted', s == 202, job)
+    if s != 202:
+        return
+    s2, _ = js(f'{H}/api/transmit', {**req_body, 'tail_number': '0001'})
+    check('second transmit while busy → 409', s2 == 409, s2)
+    done = wait(job['job_id'])
+    ev = [e['event'] for e in done.get('events', [])]
+    check('dry-run transmit completed', done.get('status') == 'completed' and done.get('physical_output') is False, done.get('status'))
+    check('event order ptt_on < audio_complete < ptt_off',
+          all(x in ev for x in ('ptt_on', 'audio_complete', 'ptt_off')) and
+          ev.index('ptt_on') < ev.index('audio_complete') < ev.index('ptt_off'), ev)
+    s, job = js(f'{H}/api/transmit', {**req_body, 'mode': 'selcal32'})
+    check('selcal32 transmit accepted', s == 202, job)
+    if s == 202:
+        for _ in range(50):
+            if 'ptt_on' in [e['event'] for e in js(f'{H}/api/transmit/{job["job_id"]}')[1].get('events', [])]:
+                break
+            time.sleep(0.05)
+        js(f'{H}/api/transmit/{job["job_id"]}/cancel', {})
+        done = wait(job['job_id'])
+        check('cancel during transmission', done.get('status') == 'cancelled' and 'ptt_off' in
+              [e['event'] for e in done.get('events', [])], done.get('status'))
+    s, hist = js(f'{H}/api/transmit/history')
+    check('server-side transmit history', s == 200 and len(hist.get('records', [])) >= 2, len(hist.get('records', [])))
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument('--host', default='http://127.0.0.1')
     ap.add_argument('--token-file', help='administrator token for the shared-key configuration')
     ap.add_argument('--json', help='write results to this file')
+    ap.add_argument('--transmit', action='store_true', help='also test transmission through a dry-run radio host service')
     args = ap.parse_args()
     H, RX, RADIO, AC = (f'{args.host}:{p}' for p in (8787, 8788, 8789, 8790))
     keyed = bool(args.token_file)
     try:
         rot = common(H, RX, RADIO, AC, keyed)
+        if args.transmit:
+            transmit_checks(H, js(f'{H}/api/rotation')[1])
         if keyed:
             with open(args.token_file, encoding='ascii') as f:
                 keyed_checks(H, RX, RADIO, AC, f.read().strip(), rot)

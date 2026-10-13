@@ -10,7 +10,7 @@
 
 HACS（HF Aircraft Calling System）は、航空機の4桁機番号から航空機用SELCALと互換性を意図した呼び出し音声を生成するWebアプリです。16音・32音、鍵付きのコード対応、プリセット、内部ループバック、無線機・航空機側受信装置エミュレータ、ホスト音声／シリアルPTTドライバを実装しています。
 
-**次の開発の中心は、対象無線機の仕様確定と、Web本体からホストサービスを経由して接続・送信を操作する機能です。** 現在のWeb画面は機器設定の保存・JSON出力までで、実機への接続・切断・直接送信は行いません。ホストCLIには実出力機能がありますが、実機試験は未実施です。
+**次の開発の中心は、対象無線機の確定と実機試験です。** 2026-10-14に、Web画面からホストサービス（`radio_host_service.py`）を経由して設定適用・送信・中止を操作する機能を実装しました（[連携設計](web-host-service-design.md)）。ドライランのホストサービスとの結合試験は合格していますが、USB音声・USBシリアル・無線機での実機試験は未実施です。対象機が確定するまでは[標準アナログ無線機仕様](standard-analog-radio-spec.md)を設計基準とします。
 
 この引き継ぎでは既存データ・秘密情報の移送や実送信は実施していません。秘密鍵・管理トークンは本書・Gitリポジトリに含めません。
 
@@ -84,6 +84,18 @@ docker compose -f compose.yaml -f compose.emulators.yaml -f compose.rotation.yam
 
 停止・状態確認は起動時と同じComposeファイルを指定します。通常構成の場合はrotationの2ファイルを除いてください。`down -v`は鍵と登録データを削除するため、通常停止に使いません。`depends_on`は鍵準備完了を保証しません。受信部は共有鍵ストアが作成されるまで最大60秒（`HACS_KEY_WAIT_SECONDS`）待機し、エミュレータは準備完了まで503を返します。実Docker環境での初回起動の挙動は引き続き確認してください。
 
+### Web画面から無線機へ送信する構成
+
+無線機を接続した端末（ローカル開発ではApple Silicon Mac）で、無線機ホストサービスを本体とは別に起動します。既定はドライランで、実際の音声出力・PTT操作は行いません。
+
+```sh
+python3 generate_key.py --output .secrets/radio-host.token
+python3 radio_host_service.py --token-file .secrets/radio-host.token
+docker compose -f compose.yaml -f compose.emulators.yaml -f compose.radio-host.yaml up -d --build
+```
+
+Web画面の「無線機インターフェース」タブで「ホストへ設定を適用（接続）」を押すと、「呼び出し操作」タブの「無線機から送信」が使えます。実出力は、無線機設定を`host_audio_serial`にし、ホストサービスを`--allow-physical-output`付きで起動した場合だけです。LinuxのDockerからは`--bind`にDockerブリッジのゲートウェイアドレスを指定します。詳細は[連携設計](web-host-service-design.md)を参照してください。
+
 ## 5. 最初に行う動作確認
 
 1. 本体で5501・16音を選び、受信設定コードとWAVを生成。内部ループバックが合格することを確認。
@@ -115,6 +127,9 @@ docker compose -f compose.yaml -f compose.emulators.yaml -f compose.rotation.yam
 | `radio_dry_run.py` | 実出力しないインターフェース動作確認 |
 | `radio_calibration.py` | 標準アナログ無線機のレベル校正。校正信号の生成・出力（PTTなし）と減衰量の算出 |
 | `radio_settings.py`、`radio_settings_ui.js` | Web設定保存、世代照合、プロファイルJSON |
+| `radio_host_service.py` | 無線機ホストサービス（ホストOSで実行）。設定適用・機器確認・送信ジョブ・取消・鍵期間の照合 |
+| `radio_link.py`、`transmit.py` | 本体からホストサービスへの接続、送信要求の生成・内部確認、サーバ側送信履歴 |
+| `transmit_ui.js`、`radio_host_ui.js` | 「無線機から送信」、ホスト状態・適用・機器一覧、送信履歴の画面 |
 | `radio_templates/` | 汎用・機種別サンプル。実行可能範囲は各backendを確認 |
 
 本体はPython標準ライブラリ中心です。ホスト実出力には`requirements-radio.txt`の依存とOS側の音声基盤が必要です。Dockerイメージへの同梱はホスト用ソフトウェアの実接続を意味しません。
@@ -131,6 +146,8 @@ docker compose -f compose.yaml -f compose.emulators.yaml -f compose.rotation.yam
 | GET/POST `/api/keys` | 管理トークン必須の履歴取得・親鍵更新 |
 | POST `/api/security` | 管理トークン必須の秘匿モード・周期変更 |
 | GET/POST `/api/radio-settings` | 無線機設定の取得・保存（実出力なし） |
+| GET `/api/radio-host`、`/api/radio-host/devices`、POST `/api/radio-host/apply` | ホストサービスの状態・機器一覧・設定適用／解除 |
+| POST `/api/transmit`、GET `/api/transmit/{id}`、POST `/api/transmit/{id}/cancel`、GET `/api/transmit/history` | 無線機からの送信、状態照会、中止、送信履歴（`confirm: true`と画面の期間・鍵識別子が必須） |
 
 `/api/security`は`cadence`と`expected_revision`、`/api/radio-settings`は`profile`と`revision`を受け取り、古い世代による変更を拒否します。すべてのAPIが管理認証付きではありません。LAN公開・遠隔操作を追加する際は認証と権限を別途設計してください。
 
@@ -138,6 +155,9 @@ docker compose -f compose.yaml -f compose.emulators.yaml -f compose.rotation.yam
 |---|---|
 | プリセット | `/data/presets.sqlite3`、`hacs_data` |
 | 無線機プロファイル | `/data/radio.sqlite3`、`hacs_data` |
+| 送信履歴 | `/data/transmit.sqlite3`、`hacs_data`。最新1000件。WAV・トークンは保存しない |
+| 連携トークン | `.secrets/radio-host.token` → 本体Docker secret、ホストサービスの`--token-file` |
+| ホストサービスのジョブ | メモリ。直近100件。再起動で消え、本体では「不明」と表示 |
 | 親鍵・秘匿設定・更新履歴 | `/keydata/keys.sqlite3`、`hacs_keys`。受信側は読み取り専用 |
 | 管理トークン | `.secrets/admin.token` → 本体Docker secret |
 | ブラウザ操作履歴 | localStorage `hacs.activity.v1` |
@@ -169,6 +189,7 @@ node test_radio_settings_ui.js
 ```sh
 python3 e2e_check.py
 python3 e2e_check.py --token-file .secrets/admin.token
+python3 e2e_check.py --transmit   # ホストサービス（ドライラン）経由の送信も確認
 ```
 
 ## 9. 未完了事項と次担当の着手順
@@ -177,8 +198,8 @@ python3 e2e_check.py --token-file .secrets/admin.token
 |---|---|---|
 | 1 | Docker・実ブラウザで再現確認（イメージ相当構成・ヘッドレスブラウザでは2026-10-14に完了） | 実Docker環境で`docker compose up --build`後に`e2e_check.py`を両構成で実行し、実機ブラウザで音声再生・WAV保存を確認して記録 |
 | 2 | 対象無線機・資料確定（未確定。暫定基準として[標準アナログ無線機仕様](standard-analog-radio-spec.md)を2026-10-14に作成） | 型式・FW・ICD・音声/PTT端子・許容値を機種別記入票に記入し、標準適合か差分ありかを判定 |
-| 3 | Web↔ホストサービス設計 | API、認証、接続状態、機器排他、WAV受渡し、ジョブID、取消・期限・異常解除を定義 |
-| 4 | ホストサービス実装・模擬試験 | 機器列挙、接続切断、設定適用、二重実行防止、異常時PTT解除を試験 |
+| 3 | Web↔ホストサービス設計（2026-10-14完了：[連携設計](web-host-service-design.md)） | API、認証、接続状態、機器排他、WAV受渡し、ジョブID、取消・期限・異常解除を定義 |
+| 4 | ホストサービス実装・模擬試験（2026-10-14：模擬ドライバ・ドライランで完了。実機ドライバでの試験は未実施） | 対象OS（まずApple Silicon Mac）でUSB音声・USBシリアルを接続し、[標準仕様](standard-analog-radio-spec.md)のS2〜S4を実施 |
 | 5 | 機種別接続・レベル校正 | 配線図と実測記録、音声レベル・トーン・PTT時間が仕様内 |
 | 6 | 実機・受信試験 | 対応する16/32音の呼び出し検出を確認し、制限事項を記録 |
 
@@ -200,6 +221,7 @@ python3 e2e_check.py --token-file .secrets/admin.token
 - [再現確認記録 2026-10-14](verification-2026-10-14.md)：イメージ相当構成・ヘッドレスブラウザでの確認結果、`e2e_check.py`
 - [無線機インターフェース必要項目・記入票](radio-interface-requirements.md)：次の実機開発の主資料
 - [標準アナログ無線機仕様](standard-analog-radio-spec.md)：対象機確定までの設計基準、校正・適合試験
+- [Web画面とホストサービスの連携設計](web-host-service-design.md)：送信API、認証、ジョブ、取消、異常時の扱い
 - [汎用音声・PTT](generic-radio-interface.md)：契約・ホスト適用・レベル設定
 - [Ethernet・シリアル・1553](radio-transport-options.md)：方式別の設計検討
 - [自動更新・鍵管理](automatic-rotation-and-management.md)：保存・運用・管理API

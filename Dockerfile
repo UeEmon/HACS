@@ -9,6 +9,7 @@ RUN mkdir -p /data /keydata && chown 65534:65534 /data /keydata && chmod 700 /ke
 ENV HOST=0.0.0.0 PORT=8787 PYTHONDONTWRITEBYTECODE=1 HACS_DATA_DIR=/data
 USER 65534:65534
 COPY tabs_ui.js security_ui.js ./
+COPY radio_host_service.py radio_link.py transmit.py transmit_ui.js radio_host_ui.js ./
 COPY emulator_server.py emulator.html emulator_ui.js ./
 EXPOSE 8787 8788 8789 8790
 CMD ["python", "server.py"]

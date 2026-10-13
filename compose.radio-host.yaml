@@ -1,0 +1,17 @@
+# Connects the main service to the radio host service running on the host OS.
+# Start the host service first:  python3 radio_host_service.py --token-file .secrets/radio-host.token
+# Docker Desktop (Windows / macOS) reaches the host at host.docker.internal.
+# Linux: host-gateway maps host.docker.internal to the docker bridge gateway; start the
+# host service with --bind set to that gateway address (for example 172.17.0.1).
+services:
+  hacs:
+    environment:
+      HACS_RADIO_HOST_URL: "${HACS_RADIO_HOST_URL:-http://host.docker.internal:8791}"
+      HACS_RADIO_HOST_TOKEN_FILE: /run/secrets/hacs_radio_host_token
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    secrets:
+      - hacs_radio_host_token
+secrets:
+  hacs_radio_host_token:
+    file: ./.secrets/radio-host.token
