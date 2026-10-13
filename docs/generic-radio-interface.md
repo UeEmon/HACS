@@ -140,6 +140,10 @@ PTT解除を音声デバイスの後処理より先に呼ぶため、音声デ�
 - pySerialのRTS/DTRと開閉時の制約: https://pyserial.readthedocs.io/en/latest/pyserial_api.html
 - 接続方式の追加検討: [Ethernet・MIL-STD-1553・シリアル](radio-transport-options.md)
 
+## 標準アナログ無線機
+
+対象機が未確定の間は、[HACS標準アナログ無線機インターフェース仕様](standard-analog-radio-spec.md)（`HACS-STD-ANALOG-v1`）を設計基準とします。平衡ライン入力（Class L）と不平衡マイク入力（Class M）の標準プロファイル、接続部の要求仕様、`radio_calibration.py`によるPTTなしのレベル校正、適合試験を定めています。
+
 ## 公開資料に基づく機種別サンプル
 
 [アイコムIC-7300：USB音声・USB SEND RTS](radio-samples/icom-ic7300-usb.md)を用意しています。手動設定・暫定待ち時間・実機未確認項目を記載しています。

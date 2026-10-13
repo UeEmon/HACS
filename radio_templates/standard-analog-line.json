@@ -1,0 +1,47 @@
+{
+  "profile_version": "HACS-RADIO-v1",
+  "name": "HACS standard analog radio (Class L balanced line input)",
+  "backend": "host_audio_serial",
+  "output_level": 0.5,
+  "standard": {
+    "id": "HACS-STD-ANALOG-v1",
+    "class": "L",
+    "values_basis": "standard_reference",
+    "note": "Reference values of the HACS standard, not data of a specific radio. Replace with the radio's documented values and the measured calibration."
+  },
+  "radio": {
+    "manufacturer": "",
+    "model": "",
+    "connector": null,
+    "audio_signal_pin": null,
+    "audio_return_pin": null,
+    "ptt_signal_pin": null,
+    "ptt_return_pin": null
+  },
+  "audio_input": {
+    "host_output_device": null,
+    "channels": 1,
+    "balanced": true,
+    "input_impedance_ohms": 600,
+    "nominal_input_vrms": 0.775,
+    "maximum_input_vrms": 1.55,
+    "passband_hz": [300, 1600],
+    "galvanic_isolation": "audio_transformer_600_600"
+  },
+  "ptt": {
+    "method": "serial_control_line",
+    "active_polarity": "contact_closure_to_return",
+    "open_circuit_voltage_v": 24,
+    "sink_current_ma": 50,
+    "galvanic_isolation": "photomos_relay",
+    "independent_watchdog": "hardware_timer_6s",
+    "serial_port": null,
+    "control_line": "rts",
+    "active_high": true
+  },
+  "timing": {
+    "lead_seconds": 0.3,
+    "tail_seconds": 0.2,
+    "max_ptt_seconds": 5.0
+  }
+}

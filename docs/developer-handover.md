@@ -28,8 +28,8 @@ HACS（HF Aircraft Calling System）は、航空機の4桁機番号から航空�
 | 鍵 | 256 bit親鍵。漏えい時は独立した新しい親鍵へ即時更新 |
 | 周期 | 日／週（月曜）／月（1日）、日本時刻00:00。WebからON/OFFと周期を変更可能 |
 | 呼び出し先 | プリセット登録・更新・削除、選択呼び出し、現在コード一覧・CSV |
-| 対象無線機 | メーカー限定なし。国際電気・日立国際、R&S、Icomの資料／サンプルあり |
-| 動作環境 | 本体はDocker、Windows／macOS／Linuxを想定。実機ドライバ・SDKの対応は別確認 |
+| 対象無線機 | 未確定・メーカー限定なし。暫定基準は`HACS-STD-ANALOG-v1`（アナログ音声入力＋接点PTT）。国際電気・日立国際、R&S、Icomの資料／サンプルあり |
+| 動作環境 | 本体はDocker、Windows／macOS／Linuxを想定。ローカル開発環境はApple Silicon搭載Mac。実機ドライバ・SDKの対応は別確認 |
 | Git・ライセンス | GitHub main、Apache-2.0 |
 
 ## 3. 現在の画面
@@ -113,6 +113,7 @@ docker compose -f compose.yaml -f compose.emulators.yaml -f compose.rotation.yam
 | `radio_interface.py` | AudioOutput／PTTOutput契約、出力順序・期限・解除 |
 | `radio_drivers.py`、`radio_host.py` | sounddevice・pySerialを用いるホストドライバ／CLI |
 | `radio_dry_run.py` | 実出力しないインターフェース動作確認 |
+| `radio_calibration.py` | 標準アナログ無線機のレベル校正。校正信号の生成・出力（PTTなし）と減衰量の算出 |
 | `radio_settings.py`、`radio_settings_ui.js` | Web設定保存、世代照合、プロファイルJSON |
 | `radio_templates/` | 汎用・機種別サンプル。実行可能範囲は各backendを確認 |
 
@@ -175,7 +176,7 @@ python3 e2e_check.py --token-file .secrets/admin.token
 | 優先 | 作業 | 完了条件 |
 |---|---|---|
 | 1 | Docker・実ブラウザで再現確認（イメージ相当構成・ヘッドレスブラウザでは2026-10-14に完了） | 実Docker環境で`docker compose up --build`後に`e2e_check.py`を両構成で実行し、実機ブラウザで音声再生・WAV保存を確認して記録 |
-| 2 | 対象無線機・資料確定 | 型式・FW・ICD・音声/PTT端子・許容値を機種別記入票に記入 |
+| 2 | 対象無線機・資料確定（未確定。暫定基準として[標準アナログ無線機仕様](standard-analog-radio-spec.md)を2026-10-14に作成） | 型式・FW・ICD・音声/PTT端子・許容値を機種別記入票に記入し、標準適合か差分ありかを判定 |
 | 3 | Web↔ホストサービス設計 | API、認証、接続状態、機器排他、WAV受渡し、ジョブID、取消・期限・異常解除を定義 |
 | 4 | ホストサービス実装・模擬試験 | 機器列挙、接続切断、設定適用、二重実行防止、異常時PTT解除を試験 |
 | 5 | 機種別接続・レベル校正 | 配線図と実測記録、音声レベル・トーン・PTT時間が仕様内 |
@@ -198,6 +199,7 @@ python3 e2e_check.py --token-file .secrets/admin.token
 - [README](../README.md)：入口・起動
 - [再現確認記録 2026-10-14](verification-2026-10-14.md)：イメージ相当構成・ヘッドレスブラウザでの確認結果、`e2e_check.py`
 - [無線機インターフェース必要項目・記入票](radio-interface-requirements.md)：次の実機開発の主資料
+- [標準アナログ無線機仕様](standard-analog-radio-spec.md)：対象機確定までの設計基準、校正・適合試験
 - [汎用音声・PTT](generic-radio-interface.md)：契約・ホスト適用・レベル設定
 - [Ethernet・シリアル・1553](radio-transport-options.md)：方式別の設計検討
 - [自動更新・鍵管理](automatic-rotation-and-management.md)：保存・運用・管理API
