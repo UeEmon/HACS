@@ -82,7 +82,7 @@ docker compose -f compose.yaml -f compose.emulators.yaml -f compose.rotation.yam
 docker compose -f compose.yaml -f compose.emulators.yaml -f compose.rotation.yaml -f compose.emulators.rotation.yaml down
 ```
 
-停止・状態確認は起動時と同じComposeファイルを指定します。通常構成の場合はrotationの2ファイルを除いてください。`down -v`は鍵と登録データを削除するため、通常停止に使いません。`depends_on`は鍵準備完了を保証しないため、初回起動時の準備状態・再試行は実Docker環境で確認してください。
+停止・状態確認は起動時と同じComposeファイルを指定します。通常構成の場合はrotationの2ファイルを除いてください。`down -v`は鍵と登録データを削除するため、通常停止に使いません。`depends_on`は鍵準備完了を保証しません。受信部は共有鍵ストアが作成されるまで最大60秒（`HACS_KEY_WAIT_SECONDS`）待機し、エミュレータは準備完了まで503を返します。実Docker環境での初回起動の挙動は引き続き確認してください。
 
 ## 5. 最初に行う動作確認
 
@@ -146,7 +146,7 @@ docker compose -f compose.yaml -f compose.emulators.yaml -f compose.rotation.yam
 
 ## 8. 検証状況と再実行方法
 
-直近のコード変更時にPythonテスト59件が合格。以下のNode画面ロジック試験も合格しています。本書作成はドキュメント変更のみで、全テストの再実行は行っていません。
+2026-10-14の再現確認で、Pythonテスト60件と以下のNode画面ロジック試験の合格を確認しました。詳細は[再現確認記録 2026-10-14](verification-2026-10-14.md)を参照してください。
 
 ```sh
 python -m unittest discover -v
@@ -159,13 +159,22 @@ node test_radio_settings_ui.js
 
 検証済み：機番号変換、トーン規則、生成PCM・検出、鍵／期間、プリセット、API認証・Origin検証、模擬サービス間通信、ホストドライバのモック、設定保存・出力レベル、画面ロジック。
 
-**未検証：Docker実起動、Windows/macOS/Linux実環境一式、実ブラウザでの視覚・操作確認、実機音声端子・PTT・RF送信、実受信装置との適合性。** 開発環境にDockerや実機はなく、Node試験はブラウザ実機試験ではありません。
+2026-10-14追加検証：Dockerfileの`COPY`対象と同じファイル構成で4サービスを起動し、`e2e_check.py`で手順1〜7（通常構成27件・共有鍵構成41件）に合格。ヘッドレスChromiumでPC・iPad・スマートフォン幅の5タブ操作、ループバック、キー操作、エミュレータ画面（45件）に合格。サービス再起動後のデータ保持も確認済み。
+
+**未検証：Dockerイメージのビルド・コンテナ制限下の実起動（作業環境からレジストリへ接続できず）、Windows/macOS/Linux実環境一式、実機ブラウザでの音声再生・WAV保存・iPad Safari、実機音声端子・PTT・RF送信、実受信装置との適合性。**
+
+起動済みの環境に対しては、次のコマンドで同じ確認を再実行できます（共有鍵構成での実行は鍵世代を1つ進めるため、試験環境でのみ使用）。
+
+```sh
+python3 e2e_check.py
+python3 e2e_check.py --token-file .secrets/admin.token
+```
 
 ## 9. 未完了事項と次担当の着手順
 
 | 優先 | 作業 | 完了条件 |
 |---|---|---|
-| 1 | Docker・実ブラウザで再現確認 | 全サービス起動、5タブ、保存、共有鍵、再起動、模擬呼び出しの結果を記録 |
+| 1 | Docker・実ブラウザで再現確認（イメージ相当構成・ヘッドレスブラウザでは2026-10-14に完了） | 実Docker環境で`docker compose up --build`後に`e2e_check.py`を両構成で実行し、実機ブラウザで音声再生・WAV保存を確認して記録 |
 | 2 | 対象無線機・資料確定 | 型式・FW・ICD・音声/PTT端子・許容値を機種別記入票に記入 |
 | 3 | Web↔ホストサービス設計 | API、認証、接続状態、機器排他、WAV受渡し、ジョブID、取消・期限・異常解除を定義 |
 | 4 | ホストサービス実装・模擬試験 | 機器列挙、接続切断、設定適用、二重実行防止、異常時PTT解除を試験 |
@@ -187,6 +196,7 @@ node test_radio_settings_ui.js
 ## 11. 関連資料
 
 - [README](../README.md)：入口・起動
+- [再現確認記録 2026-10-14](verification-2026-10-14.md)：イメージ相当構成・ヘッドレスブラウザでの確認結果、`e2e_check.py`
 - [無線機インターフェース必要項目・記入票](radio-interface-requirements.md)：次の実機開発の主資料
 - [汎用音声・PTT](generic-radio-interface.md)：契約・ホスト適用・レベル設定
 - [Ethernet・シリアル・1553](radio-transport-options.md)：方式別の設計検討
