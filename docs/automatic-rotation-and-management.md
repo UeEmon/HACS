@@ -6,7 +6,7 @@
 
 ## 自動更新付きDocker起動
 
-Python 3.10以降とDocker Composeを使用する。Windows・Mac・Linuxで同じCompose構成。
+Python 3.9以降とDocker Composeを使用する。Windows・Mac・Linuxで同じCompose構成。
 
 ```bash
 python3 generate_key.py --output .secrets/admin.token

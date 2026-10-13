@@ -67,7 +67,7 @@ Composeの公開ポートは127.0.0.1へバインドします。別端末から�
 
 ### Web秘匿切替・共有鍵を使用する構成
 
-Python 3.10以降で、初回のみ別用途の管理トークンを作成します。既存ファイルは上書きしません。環境に応じて`python`を`python3`へ読み替えます。
+Python 3.9以降で、初回のみ別用途の管理トークンを作成します。既存ファイルは上書きしません。環境に応じて`python`を`python3`へ読み替えます。
 
 ```sh
 python generate_key.py --output .secrets/admin.token

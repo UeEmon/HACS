@@ -163,11 +163,11 @@ Class Mは機種ごとのばらつきが大きいため、Class Lの入力があ
 
 | 項目 | Windows | macOS（Apple Silicon含む） | Linux |
 |---|---|---|---|
-| Python | 3.10以降、`python` | 3.10以降（arm64ネイティブ）、`python3` | 3.10以降、`python3` |
+| Python | 3.9以降、`python` | 3.9以降、`python3`。Xcode付属の3.9で可（書込み権限がないため`pip`は自動で`--user`導入） | 3.9以降、`python3` |
 | 追加依存 | `pip install -r requirements-radio.txt` | 同左（sounddeviceのwheelはPortAudioを同梱） | 同左、加えて`libportaudio2`等 |
 | 音声の形式 | サウンド設定でデバイスを48000 Hz・16 bitに設定し、「オーディオの拡張」を無効にする | 「Audio MIDIの設定」でデバイスを48,000 Hzに設定 | PipeWire／PulseAudioのデバイスを48 kHzに設定。サンプルレート変換を避けられる場合はALSAデバイスを直接指定 |
 | デバイス指定 | 同じ機器がMME／DirectSound／WASAPIで重複して表示されます。WASAPIの**数値ID**を指定 | 機器名（完全一致）または数値ID | 機器名または数値ID |
-| 既定出力 | 接続部のUSB音声機器を既定にしない。通知音を無効化 | 同左。「サウンドエフェクト」の出力先を内蔵スピーカーにする | 同左 |
+| 既定出力 | 接続部のUSB音声機器を既定にしない。通知音を無効化 | 同左。モニターのHDMI／DisplayPort音声や内蔵スピーカーを誤って指定しないこと。「サウンドエフェクト」の出力先を内蔵スピーカーにする | 同左 |
 | シリアルポート名 | `COM3`等（デバイスマネージャで確認） | `/dev/cu.usbserial-…`（`tty.`ではなく`cu.`を使う） | `/dev/ttyUSB0`、`/dev/ttyACM0`、または`/dev/serial/by-id/…` |
 | シリアルの注意 | USBシリアル変換器のドライバ（FTDI、CH34x等）を導入 | FTDIは標準ドライバで認識されることが多い。CH34x等はメーカー配布ドライバが必要な場合がある | ユーザーを`dialout`グループに追加。ModemManagerがポートを探索して制御線を動かすことがあるため、対象ポートを除外。Ubuntuでは`brltty`がCH34x系を占有することがある |
 | Docker本体との関係 | 本体はDocker Desktop、ホスト処理はWindows上のPython | 本体はDocker Desktop（arm64イメージ）、ホスト処理はmacOS上のPython | 本体はDocker Engine、ホスト処理はホスト上のPython |

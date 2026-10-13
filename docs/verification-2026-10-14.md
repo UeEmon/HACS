@@ -74,3 +74,22 @@ python3 e2e_check.py --token-file .secrets/admin.token --json e2e-keyed.json
 | ヘッドレスChromiumでの送信操作（PC・iPad・スマートフォン幅） | 30/30合格 |
 
 `--transmit`は、ホストに適用した設定がドライランでない場合は送信試験を行いません。
+
+## 追記：ローカル開発環境（Apple Silicon Mac）での確認（同日）
+
+| 確認 | 環境 | 結果 |
+|---|---|---|
+| `git pull`で`7e3e3a1`へ更新 | Mac上のLinux仮想環境（arm64、Python 3.10） | 作業ツリーに変更なし |
+| Python単体・結合試験、Node試験 | 同上 | 89件・6本合格 |
+| 5サービス（本体・受信・エミュレータ2・ドライランのホストサービス）で`e2e_check.py --transmit` | 同上 | 39/39合格 |
+| `pip install -r requirements-radio.txt` | macOS本体、Xcode付属Python 3.9 | sounddevice 0.5.6、pyserial 3.5を`--user`で導入 |
+| `radio_host.py --list-audio` | macOS本体 | 出力機器2件：ID 0「HP 2310e」（外部モニターの音声）、ID 2「MacBook Airのスピーカー」 |
+| `python3 -m serial.tools.list_ports` | macOS本体 | `/dev/cu.Bluetooth-Incoming-Port`、`/dev/cu.debug-console`の2件 |
+| 全試験をPython 3.9で実行 | クラウド環境、CPython 3.9.25 | 89件合格 |
+
+結果から分かったこと：
+
+- macOS本体でPortAudioとシリアルの一覧取得は動作しました。標準仕様の試験S2（ホスト音声）には進めます。
+- ただし、無線機向けのUSB音声機器とUSBシリアル変換器はまだ接続されていません。表示された2つの音声機器とシリアルポートは、無線機の接続先ではありません。
+- 動作要件の記載を「Python 3.10以降」から「3.9以降」に改めました（macOS標準の3.9で利用できるようにするため）。
+- Mac上のLinux仮想環境には音声・シリアル機器がないため、ホストサービスで実機器を使う場合は、macOS本体のPythonで起動します。
