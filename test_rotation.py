@@ -15,7 +15,7 @@ from http.server import ThreadingHTTPServer
 from generate_key import create_key
 from key_store import KeyStore
 from presets import Presets
-from rotation import Mapping, configured_mapping, period_at, parse_period
+from rotation import Mapping, KeyStoreNotReady, configured_mapping, period_at, parse_period, wait_for_mapping
 from server import Handler as TxHandler
 from receiver_server import Handler as RxHandler
 from tail_mapping import tail_to_selcal
@@ -106,6 +106,31 @@ class RotationTests(unittest.TestCase):
             path.write_bytes(b'corrupted database')
             with patch.dict(os.environ,env,clear=True):
                 with self.assertRaises(ValueError):configured_mapping()
+
+    def test_readonly_service_waits_for_writer_but_not_for_bad_settings(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path=Path(directory)/'keys.sqlite3'
+            readonly={'HACS_ROTATION':'daily','HACS_KEY_STORE':str(path),'HACS_KEY_READONLY':'1'}
+            now=[0.0]; sleeps=[]
+            def sleep(seconds):
+                sleeps.append(seconds); now[0]+=seconds
+                if len(sleeps)==3:
+                    with patch.dict(os.environ,{'HACS_ROTATION':'daily','HACS_KEY_STORE':str(path),'HACS_KEY_CREATE':'1'},clear=True):
+                        configured_mapping()
+            with patch.dict(os.environ,readonly,clear=True):
+                self.assertTrue(wait_for_mapping(timeout=10,sleep=sleep,clock=lambda:now[0]).snapshot().metadata()['rotation_enabled'])
+            self.assertEqual(len(sleeps),3)
+        with tempfile.TemporaryDirectory() as directory:
+            env={'HACS_ROTATION':'daily','HACS_KEY_STORE':str(Path(directory)/'none.sqlite3'),'HACS_KEY_READONLY':'1'}
+            now=[0.0]
+            with patch.dict(os.environ,env,clear=True):
+                with self.assertRaises(KeyStoreNotReady):
+                    wait_for_mapping(timeout=2,sleep=lambda s:now.__setitem__(0,now[0]+s),clock=lambda:now[0])
+            with patch.dict(os.environ,{**env,'HACS_ROTATION':'hourly'},clear=True):
+                calls=[]
+                with self.assertRaises(ValueError):
+                    wait_for_mapping(timeout=10,sleep=calls.append,clock=lambda:0.0)
+                self.assertEqual(calls,[])
 
     def test_cli_keyed_wav_includes_period_and_key_context(self):
         with tempfile.TemporaryDirectory() as directory:

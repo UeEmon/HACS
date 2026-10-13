@@ -8,7 +8,7 @@ import threading
 from receiver import MAX_BYTES, decode_wav
 from selcal import tones_for, validate
 from tail_mapping import validate_tail
-from rotation import configured_mapping
+from rotation import configured_mapping, wait_for_mapping
 from wav_context import read as read_context
 
 class Handler(BaseHTTPRequestHandler):
@@ -110,7 +110,8 @@ class Handler(BaseHTTPRequestHandler):
             self.analysis_lock.release()
 
 if __name__ == '__main__':
-    configured_mapping()
+    # A read-only store may start before the writer; invalid settings still fail at once.
+    wait_for_mapping()
     port=int(os.environ.get('PORT','8788'))
     print(f'HACS receiver simulator: http://localhost:{port}',flush=True)
     ThreadingHTTPServer((os.environ.get('HOST','127.0.0.1'),port),Handler).serve_forever()

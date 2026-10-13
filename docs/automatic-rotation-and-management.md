@@ -68,7 +68,7 @@ docker compose -f compose.yaml -f compose.rotation.yaml down
 
 ## Pythonでの構成
 
-Dockerを使用しない場合も、同じ `HACS_KEY_STORE`、`HACS_ROTATION` を2サービスへ設定する。送信部には `HACS_KEY_CREATE=1` と `HACS_ADMIN_TOKEN_FILE`、受信部には `HACS_KEY_READONLY=1` を設定する。送信部を先に起動する。`HACS_DATA_DIR` でプリセット保存先を変更できる。
+Dockerを使用しない場合も、同じ `HACS_KEY_STORE`、`HACS_ROTATION` を2サービスへ設定する。送信部には `HACS_KEY_CREATE=1` と `HACS_ADMIN_TOKEN_FILE`、受信部には `HACS_KEY_READONLY=1` を設定する。送信部を先に起動する。受信部を先に起動した場合は、鍵ストアが作成されるまで最大60秒（`HACS_KEY_WAIT_SECONDS`で秒数を変更可）待機し、超過すると終了する。周期指定の誤りや鍵ストアの破損は待機せずに即座に終了する。`HACS_DATA_DIR` でプリセット保存先を変更できる。
 
 共有ストアを使わず `HACS_KEY_FILE` を指定するファイル方式も可能だが、画面からの親鍵更新には書込み可能な共有ストアが必要。CLIの機番号変換とWAV生成も現在の環境設定の鍵・周期を使用する。`tail_mapping.py` のPython関数は互換性維持のため基礎の鍵なし変換を提供し、期間付き処理は `rotation.configured_mapping().snapshot()` を使用する。
 

@@ -13,6 +13,26 @@ from key_store import KeyStore, key_id
 JST = timezone(timedelta(hours=9))
 
 
+class KeyStoreNotReady(ValueError):
+    """A read-only service started before the writer created the shared store."""
+
+
+def wait_for_mapping(timeout=None, interval=1.0, sleep=None, clock=None):
+    """Retry only while the shared store is absent; other errors still fail at once."""
+    import time
+    sleep, clock = sleep or time.sleep, clock or time.monotonic
+    if timeout is None:
+        timeout = float(os.environ.get('HACS_KEY_WAIT_SECONDS', '60'))
+    deadline = clock() + max(0.0, timeout)
+    while True:
+        try:
+            return configured_mapping()
+        except KeyStoreNotReady:
+            if clock() >= deadline:
+                raise
+            sleep(interval)
+
+
 def period_at(cadence, now):
     if now.tzinfo is None:
         raise ValueError('タイムゾーン付き日時が必要です。')
@@ -147,7 +167,7 @@ def configured_mapping():
         store.initialize(secrets.token_bytes(32))
         return configured_mapping()
     if store and store.readonly:
-        raise ValueError('共有鍵ストアの初期化を待っています。')
+        raise KeyStoreNotReady('共有鍵ストアの初期化を待っています。')
     if cadence == 'off':
         return Mapping()
     filename = os.environ.get('HACS_KEY_FILE')
