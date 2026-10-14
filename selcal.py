@@ -57,7 +57,7 @@ if __name__ == '__main__':
     from pathlib import Path
     parser = argparse.ArgumentParser(description='航空SELCAL WAV生成')
     parser.add_argument('code', nargs='?', help='SELCALコード（従来の直接指定）')
-    parser.add_argument('--tail', help='選択方式で変換する4桁の機番号')
+    parser.add_argument('--tail', help='選択方式で変換する4桁の呼び出し相手先')
     parser.add_argument('--mode', choices=['selcal16','selcal32'], default='selcal16')
     parser.add_argument('--output', default='selcal.wav')
     parser.add_argument('--level', type=float, default=0.5)

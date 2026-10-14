@@ -25,7 +25,7 @@ document.addEventListener('DOMContentLoaded',()=>{
       window.dispatchEvent(new CustomEvent('hacs-loopback-result',{detail:result}));
       const detected=result.detection.calls.map(call=>call.code).join(', ')||'未検出';
       status.textContent=(result.passed?'合格：生成音声と受信検出コードが一致しました。':'不合格：生成音声を確認してください。')+
-        '\n機番号: '+result.tail_number+' / 期待コード: '+result.selcal_code+' / 検出: '+detected+
+        '\n呼び出し相手先: '+result.tail_number+' / 期待コード: '+result.selcal_code+' / 検出: '+detected+
         '\n音声: '+result.detection.sample_rate+' Hz / '+result.detection.duration_seconds+'秒'+
         (result.detection.calls.length?'\n信号長: '+result.detection.calls[0].pulse_seconds?.join('秒 / ')+'秒 / 無音間隔: '+result.detection.calls[0].gap_seconds+'秒':'')+
         '\n期間: '+(result.period_id||'固定')+' / 鍵識別子: '+(result.key_id||'なし');

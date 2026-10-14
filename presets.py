@@ -50,7 +50,7 @@ class Presets:
                         raise ValueError('対象のプリセットが存在しません。')
                 return dict(db.execute('SELECT id,name,tail_number,mode FROM presets WHERE id=?', (identifier,)).fetchone())
         except sqlite3.IntegrityError:
-            raise ValueError('同じ機番号・方式のプリセットが登録済みです。既存の項目を選択して更新してください。') from None
+            raise ValueError('同じ呼び出し相手先・方式のプリセットが登録済みです。既存の項目を選択して更新してください。') from None
 
     def delete(self, identifier):
         if type(identifier) is not int or identifier <= 0:

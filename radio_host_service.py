@@ -381,7 +381,7 @@ def parse_job(data):
         raise ValueError('方式はselcal16またはselcal32です。')
     tail = data.get('tail_number')
     if not isinstance(tail, str) or not re.fullmatch(r'[0-9]{4}', tail):
-        raise ValueError('機番号は4桁の数字です。')
+        raise ValueError('呼び出し相手先は4桁の数字です。')
     code = validate_code(data.get('code'), mode)
     period, key = data.get('period_id', ''), data.get('key_id', '')
     if not isinstance(period, str) or not isinstance(key, str) or len(period) > 40 or len(key) > 40:
