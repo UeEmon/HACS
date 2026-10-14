@@ -3,9 +3,9 @@
 <h1 id="title">HACS エミュレータ</h1><p>ソフトウェア内の模擬通信です。実際の無線送信・音声端子出力は行いません。</p>
 <section><strong id="state">接続中…</strong><div id="code"></div><div id="epoch"></div></section>
 <section id="aircraft" hidden><h2>自機の受信設定</h2><form id="config">
-<label>機番号（4桁） <input name="tail_number" value="5501" pattern="[0-9]{4}" required maxlength="4"></label>
+<label>呼び出し相手先（4桁） <input name="tail_number" value="5501" pattern="[0-9]{4}" required maxlength="4"></label>
 <label>自機コード方式 <select name="mode"><option value="selcal16">SELCAL 16</option><option value="selcal32">SELCAL 32</option></select></label>
 <label>受信能力 <select name="receive_mode"><option value="selcal32">SELCAL 32（16音を含む）</option><option value="selcal16">SELCAL 16</option></select></label><button>設定を反映</button></form></section>
-<section id="radio" hidden><h2>試験音声の生成・模擬送信</h2><form id="generate"><label>呼び出し先機番号 <input name="tail_number" value="5501" pattern="[0-9]{4}" required maxlength="4"></label><label>コード方式 <select name="mode"><option value="selcal16">SELCAL 16</option><option value="selcal32">SELCAL 32</option></select></label><button>試験WAVを生成</button></form>
+<section id="radio" hidden><h2>試験音声の生成・模擬送信</h2><form id="generate"><label>呼び出し相手先 <input name="tail_number" value="5501" pattern="[0-9]{4}" required maxlength="4"></label><label>コード方式 <select name="mode"><option value="selcal16">SELCAL 16</option><option value="selcal32">SELCAL 32</option></select></label><button>試験WAVを生成</button></form>
 <p>またはHACS送信画面で生成・保存したWAVを選択してください。</p><input id="file" type="file" accept=".wav,audio/wav"><p><audio id="audio" controls></audio></p><button id="send" disabled>無線機から航空機へ模擬送信</button><p id="waveinfo"></p></section>
 <p id="message" role="status" aria-live="polite"></p><section><h2>直近の受信・転送結果</h2><strong id="result"></strong><pre id="detail"></pre></section><details><summary>模擬PTT・処理履歴</summary><pre id="events"></pre></details><script src="/emulator_ui.js"></script></html>

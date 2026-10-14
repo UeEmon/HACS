@@ -38,7 +38,7 @@
   function showJob(job){
     state.job=job;
     const physical=job.physical_output?'実出力':'ドライラン';
-    el.status.textContent='送信 '+(STATUS[job.status]||job.status)+' / 機番号 '+job.tail_number+' → '+job.code+' / '+physical+
+    el.status.textContent='送信 '+(STATUS[job.status]||job.status)+' / 呼び出し相手先 '+job.tail_number+' → '+job.code+' / '+physical+
       (job.error?'\n'+job.error:'')+'\nジョブID: '+job.job_id+'（相手の受信成功は確認していません）';
     el.events.textContent='';
     for(const e of job.events||[]){
@@ -74,7 +74,7 @@
   async function send(){
     if(el.button.disabled||!state.audio)return;
     const a=state.audio, h=state.host, physical=h?.profile?.backend==='host_audio_serial';
-    const message='機番号 '+a.tail+'（'+(a.mode==='selcal32'?'SELCAL 32':'従来16音')+'）を無線機から送信します。'+
+    const message='呼び出し相手先 '+a.tail+'（'+(a.mode==='selcal32'?'SELCAL 32':'従来16音')+'）を無線機から送信します。'+
       (physical?'\n\n実際に音声出力とPTT操作を行い、電波を発射します。':'\n\nホストはドライラン設定のため、実際の出力は行いません。')+'\nよろしいですか？';
     if(!window.confirm(message))return;
     state.busy=true;state.job=null;el.events.textContent='';el.status.textContent='送信を要求中…';render();

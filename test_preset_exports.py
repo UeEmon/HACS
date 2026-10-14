@@ -60,7 +60,7 @@ class PresetExportTests(unittest.TestCase):
                     rows=list(csv.DictReader(io.StringIO(response.read().decode('utf-8-sig'))))
                     self.assertIn('attachment;', response.headers['Content-Disposition'])
                     self.assertEqual(response.headers['X-HACS-Key-ID'],data['key_id'])
-                self.assertEqual({r['機番号']:r['呼び出しコード'] for r in rows},
+                self.assertEqual({r['呼び出し相手先']:r['呼び出しコード'] for r in rows},
                                  {r['tail_number']:r['selcal_code'] for r in data['presets']})
                 with self.assertRaises(urllib.error.HTTPError) as error:
                     opener.open(base+'/api/presets/export.csv?key_id=revoked')

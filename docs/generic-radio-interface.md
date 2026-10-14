@@ -52,7 +52,7 @@ flowchart TB
 | `radio_interface.py` / `RadioInterface` | PCM一致確認、排他制御、前後待ち、時間予算、例外時の解除処理 |
 | `radio_templates/driver_template.py` | 実機ドライバの差し替え用ひな形。未実装操作は明示的に例外を返す |
 | `radio_templates/generic.json` | 接続・電気条件・待ち時間の設定ひな形 |
-| `radio_dry_run.py` | 現在の機番号変換と生成音声を使い、実出力せず処理順序を確認するCLI |
+| `radio_dry_run.py` | 現在の呼び出し相手先変換と生成音声を使い、実出力せず処理順序を確認するCLI |
 
 順序は「音声をPCM解析して一致確認 → 音声デバイス準備 → 鍵・期間確認 → PTT ON → 前待ち → 鍵・期間再確認 → 再生開始 → 音声デバイスの完了待ち → 後待ち → PTT OFF → 音声停止」です。
 

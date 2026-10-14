@@ -3,7 +3,7 @@ import csv
 import io
 
 COLUMNS = (
-    ('name', '名称'), ('tail_number', '機番号'), ('mode', '方式'),
+    ('name', '名称'), ('tail_number', '呼び出し相手先'), ('mode', '方式'),
     ('selcal_code', '呼び出しコード'), ('mapping_version', '変換方式'),
     ('period_id', '期間'), ('key_id', '鍵識別子'),
     ('server_time_jst', '作成日時JST'), ('next_update_jst', '次回更新JST'),
