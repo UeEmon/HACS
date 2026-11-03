@@ -11,6 +11,11 @@ const vm = require('node:vm');
       assert.ok(fs.existsSync(match[1].replace(/^\//,'')));
     }
   }
+  for (const filename of ['index.html','receiver.html','emulator.html']) {
+    const html=fs.readFileSync(filename,'utf8');
+    assert.ok(html.includes('<link rel="stylesheet" href="/washitsu.css">'),filename+' は共通スタイルを読み込む');
+    assert.ok(!/<style[\s>]/.test(html),filename+' に個別の<style>を置かない');
+  }
   let metadata = {rotation_enabled:true,cadence:'daily',period_id:'D-2026-10-12',
     key_id:'first',seconds_until_update:3600,next_update_jst:'2026-10-13T00:00:00+09:00'};
   const events=[], panel={textContent:''};

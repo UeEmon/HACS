@@ -157,6 +157,8 @@ class Handler(BaseHTTPRequestHandler):
         path = urlparse(self.path).path
         if path == '/':
             return self.reply(200, Path(__file__).with_name('emulator.html').read_bytes(), 'text/html; charset=utf-8')
+        if path == '/washitsu.css':
+            return self.reply(200, Path(__file__).with_name('washitsu.css').read_bytes(), 'text/css; charset=utf-8')
         if path == '/emulator_ui.js':
             return self.reply(200, Path(__file__).with_name('emulator_ui.js').read_bytes(), 'text/javascript; charset=utf-8')
         if path == '/api/status':
