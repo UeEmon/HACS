@@ -96,6 +96,8 @@ class Handler(BaseHTTPRequestHandler):
         url = urlparse(self.path)
         if url.path == '/':
             return self.reply(200, 'text/html; charset=utf-8', Path(__file__).with_name('index.html').read_bytes())
+        if url.path == '/washitsu.css':
+            return self.reply(200, 'text/css; charset=utf-8', Path(__file__).with_name('washitsu.css').read_bytes())
         if url.path == '/radio_settings_ui.js':
             return self.reply(200, 'text/javascript; charset=utf-8', Path(__file__).with_name('radio_settings_ui.js').read_bytes())
         if url.path == '/api/radio-settings':

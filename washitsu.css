@@ -1,0 +1,241 @@
+/* HACS — Wabi-Sabi Washitsu design system
+   Source: the "Wabi-Sabi Washitsu" design system (tokens.json / README / bundle.css).
+   Colors are referenced only through the tokens below. No shadows, no gradients:
+   depth comes from bg-primary → bg-secondary → bg-tertiary and 1px border-default lines.
+   Theme: 昼の章 (light) by default, 夜の章 (dark) when the OS prefers dark.
+   Fonts load from Google Fonts; offline, the local Mincho / Gothic fallbacks are used. */
+@import url("https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;600&family=Noto+Sans+JP:wght@400;500&family=Inter:wght@400;500&family=JetBrains+Mono:wght@400&display=swap");
+
+:root {
+  color-scheme: light dark;
+  /* color — 昼の章 */
+  --bg-primary: #FCFAFC;      /* 生成り和紙 */
+  --bg-secondary: #F4F2F5;    /* 練色 */
+  --bg-tertiary: #E5E8EC;     /* 湊鼠 */
+  --text-primary: #181A1C;    /* 呂色 */
+  --text-secondary: #575B61;  /* 素鼠 */
+  --text-muted: #8B919A;
+  --accent-primary: #1B364A;  /* 勝色 */
+  --accent-hover: #112330;
+  --accent-subtle: #E2E8EE;
+  --on-accent: #FFFFFF;
+  --border-default: #E1E4E8;
+  --success: #2E5940;         /* 千歳緑 */
+  --success-bg: #E8F0EA;
+  --warning: #B87B1E;         /* 琥珀色 */
+  --warning-bg: #F7EFE0;
+  --danger: #B53D35;          /* 茜色 */
+  --danger-bg: #F7E6E5;
+  /* type */
+  --font-serif: "Shippori Mincho", "Yu Mincho", "YuMincho", "Hiragino Mincho ProN", serif;
+  --font-sans: "Noto Sans JP", Inter, "Hiragino Sans", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+  /* spacing */
+  --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px;
+  --space-6: 24px; --space-8: 32px; --space-12: 48px; --space-16: 64px;
+  /* radius, border, motion */
+  --radius-sm: 4px; --radius-md: 6px; --radius-lg: 8px;
+  --border-width: 1px;
+  --duration-fast: 0.15s;
+  /* HACS: the UI spec asks for 44×44 CSS px touch targets (the system's button is 40px). */
+  --control-height: 44px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* color — 夜の章 */
+    --bg-primary: #161719;      /* 黒橡 */
+    --bg-secondary: #1E2023;    /* 憲法黒 */
+    --bg-tertiary: #282B30;     /* 煤竹色 */
+    --text-primary: #ECECEE;    /* 胡粉色 */
+    --text-secondary: #9FA3A9;  /* 鉛色 */
+    --text-muted: #676B71;
+    --accent-primary: #D86548;  /* 朱漆 */
+    --accent-hover: #E57559;
+    --accent-subtle: #38241F;
+    --on-accent: #FFFFFF;
+    --border-default: #2B2E33;
+    --success: #7DB394;
+    --success-bg: #1D2B23;
+    --warning: #D9A24E;
+    --warning-bg: #2D2418;
+    --danger: #E58178;
+    --danger-bg: #33201E;
+  }
+}
+
+/* ---- base ---- */
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { background: var(--bg-primary); }
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.8;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  -webkit-text-size-adjust: 100%;
+}
+main { max-width: 960px; margin: 0 auto; padding: var(--space-16) var(--space-6); }
+main.narrow { max-width: 760px; }
+
+h1, h2, h3 { font-family: var(--font-serif); font-weight: 600; color: var(--text-primary); }
+h1 { font-size: 32px; line-height: 1.4; letter-spacing: .04em; margin: 0 0 var(--space-4); }
+h2 { font-size: 22px; line-height: 1.5; letter-spacing: .02em; margin: var(--space-8) 0 var(--space-4); }
+h3 { font-size: 18px; line-height: 1.5; letter-spacing: .02em; margin: var(--space-8) 0 var(--space-3); }
+p { margin: 0 0 var(--space-4); }
+a { color: var(--accent-primary); text-underline-offset: 3px; }
+a:hover { color: var(--accent-hover); }
+strong { font-weight: 500; }
+
+.eyebrow { font-size: 12px; letter-spacing: .08em; color: var(--text-secondary); margin: 0 0 var(--space-2); }
+.lead { font-family: var(--font-serif); font-size: 17px; line-height: 1.9; color: var(--text-secondary); }
+.note { font-size: 13px; line-height: 1.7; letter-spacing: .02em; color: var(--text-secondary); }
+.pre-line { white-space: pre-line; }
+input + .note, select + .note { margin-top: var(--space-2); }
+
+/* ---- page header ---- */
+.page-head { padding-bottom: var(--space-8); margin-bottom: var(--space-8); border-bottom: var(--border-width) solid var(--border-default); }
+.page-head .lead { margin-bottom: 0; }
+
+/* ---- tabs (障子の桟のような下線) ---- */
+nav[role=tablist] {
+  display: flex; flex-wrap: wrap; gap: var(--space-1);
+  margin: var(--space-8) 0 var(--space-6);
+  border-bottom: var(--border-width) solid var(--border-default);
+}
+nav[role=tablist] button {
+  margin: 0 0 calc(-1 * var(--border-width)); border: 0; border-radius: 0;
+  border-bottom: 2px solid transparent; background: transparent;
+  color: var(--text-secondary); padding: 0 var(--space-4);
+}
+nav[role=tablist] button:hover { background: transparent; color: var(--text-primary); border-bottom-color: var(--border-default); }
+nav[role=tablist] button[aria-selected="true"] { color: var(--accent-primary); border-bottom-color: var(--accent-primary); }
+section[role=tabpanel] { padding: var(--space-2) 0; }
+section[role=tabpanel] > h2:first-child { margin-top: 0; }
+
+/* ---- form ---- */
+label { display: block; margin: var(--space-6) 0 var(--space-2); font-size: 14px; font-weight: 500; letter-spacing: .02em; }
+fieldset label, form label { font-weight: 500; }
+label > input, label > select { display: block; margin-top: var(--space-2); font-weight: 400; }
+label > input[type=checkbox], label > input[type=radio] { display: inline-block; margin: 0 var(--space-2) 0 0; vertical-align: middle; }
+input, select, textarea, button { font: inherit; color: inherit; }
+input[type=text], input[type=number], input[type=password], input:not([type]), select, textarea {
+  min-height: var(--control-height); max-width: 100%;
+  padding: var(--space-2) var(--space-3);
+  background: var(--bg-primary); color: var(--text-primary);
+  border: var(--border-width) solid var(--border-default); border-radius: var(--radius-md);
+  transition: border-color var(--duration-fast) ease;
+}
+input:hover, select:hover, textarea:hover { border-color: var(--text-muted); }
+input::placeholder { color: var(--text-muted); }
+input:disabled, select:disabled, textarea:disabled { color: var(--text-muted); background: var(--bg-secondary); cursor: not-allowed; }
+input.code-input, input[inputmode=numeric][maxlength="4"] {
+  font-family: var(--font-mono); font-size: 26px; letter-spacing: .2em; width: 12ch; min-width: 0;
+}
+input[type=file] { max-width: 100%; font-size: 14px; color: var(--text-secondary); }
+input[type=file]::file-selector-button {
+  font: inherit; min-height: var(--control-height); margin-right: var(--space-3);
+  padding: 0 var(--space-4); border-radius: var(--radius-md);
+  border: var(--border-width) solid var(--border-default); background: var(--bg-secondary); color: var(--text-primary); cursor: pointer;
+}
+input[type=range] { width: 100%; max-width: 480px; accent-color: var(--accent-primary); min-height: var(--control-height); }
+input[type=checkbox], input[type=radio] { accent-color: var(--accent-primary); width: 18px; height: 18px; }
+fieldset {
+  margin: var(--space-6) 0; padding: var(--space-2) var(--space-6) var(--space-6);
+  border: var(--border-width) solid var(--border-default); border-radius: var(--radius-lg);
+}
+legend { padding: 0 var(--space-2); font-family: var(--font-serif); font-weight: 600; letter-spacing: .02em; }
+
+/* ---- buttons ---- */
+button {
+  min-height: var(--control-height); min-width: var(--control-height);
+  margin: var(--space-2) var(--space-2) var(--space-2) 0; padding: 0 var(--space-6);
+  font-size: 14px; font-weight: 500; letter-spacing: .02em; line-height: 1.2;
+  background: var(--bg-secondary); color: var(--text-primary);
+  border: var(--border-width) solid var(--border-default); border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background-color var(--duration-fast) ease, border-color var(--duration-fast) ease, color var(--duration-fast) ease;
+}
+button:hover { background: var(--bg-tertiary); }
+button.primary { background: var(--accent-primary); border-color: var(--accent-primary); color: var(--on-accent); }
+button.primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+button.danger { color: var(--danger); }
+button.danger:hover { background: var(--danger-bg); border-color: var(--danger-bg); }
+button:disabled, button.primary:disabled, button.danger:disabled {
+  background: var(--bg-secondary); border-color: var(--border-default); color: var(--text-muted); cursor: not-allowed;
+}
+:focus-visible { outline: 2px solid var(--accent-primary); outline-offset: 2px; }
+input:focus-visible, select:focus-visible, textarea:focus-visible { border-color: var(--accent-primary); }
+
+/* ---- containers (card) ---- */
+.card, .setting-code, .transmit, .panel-card {
+  background: var(--bg-secondary);
+  border: var(--border-width) solid var(--border-default); border-radius: var(--radius-lg);
+  padding: var(--space-6); margin: var(--space-8) 0;
+}
+.transmit > h3:first-child, .card > h2:first-child, .card > h3:first-child { margin-top: 0; }
+.setting-code > span { display: block; font-size: 12px; letter-spacing: .08em; color: var(--text-secondary); }
+.setting-code output {
+  display: block; margin: var(--space-2) 0 var(--space-3);
+  font-family: var(--font-mono); font-size: 32px; line-height: 1.3; letter-spacing: .15em;
+  font-variant-numeric: tabular-nums; overflow-wrap: anywhere; color: var(--text-primary);
+}
+.setting-code .note { margin: 0; }
+
+/* rotation status line at the top of each page */
+#rotation-status {
+  padding: var(--space-3) var(--space-4); margin: var(--space-6) 0;
+  background: var(--bg-secondary); border: var(--border-width) solid var(--border-default); border-radius: var(--radius-md);
+}
+
+/* receiver result: 自局一致 = 千歳緑 (word always shown alongside the color) */
+.result {
+  padding: var(--space-6); margin: var(--space-8) 0; white-space: pre-line;
+  font-size: 17px; line-height: 1.8;
+  background: var(--bg-secondary); border: var(--border-width) solid var(--border-default); border-radius: var(--radius-lg);
+}
+.result.alert { background: var(--success-bg); border-color: var(--success); color: var(--text-primary); }
+.result.alert::first-line { color: var(--success); font-weight: 500; }
+
+/* ---- details / tables / misc ---- */
+details {
+  margin: var(--space-6) 0; padding: var(--space-3) var(--space-6);
+  border: var(--border-width) solid var(--border-default); border-radius: var(--radius-lg); background: var(--bg-primary);
+}
+details[open] { padding-bottom: var(--space-6); }
+summary { cursor: pointer; min-height: var(--control-height); display: flex; align-items: center; font-weight: 500; letter-spacing: .02em; }
+summary::marker { color: var(--text-muted); }
+table { width: 100%; border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; margin: var(--space-4) 0; display: block; overflow-x: auto; }
+th, td { text-align: left; padding: var(--space-3) var(--space-4) var(--space-3) 0; border-bottom: var(--border-width) solid var(--border-default); white-space: nowrap; }
+th { font-size: 12px; font-weight: 500; letter-spacing: .06em; color: var(--text-secondary); }
+pre, code, kbd, samp { font-family: var(--font-mono); font-size: 13px; }
+pre {
+  white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.7;
+  background: var(--bg-tertiary); color: var(--text-primary);
+  border: var(--border-width) solid var(--border-default); border-radius: var(--radius-lg);
+  padding: var(--space-4) var(--space-6); margin: var(--space-4) 0;
+}
+pre:empty { display: none; }
+audio { width: 100%; margin: var(--space-4) 0; }
+hr { border: 0; border-top: var(--border-width) solid var(--border-default); margin: var(--space-8) 0; }
+[role=status] { min-height: 1.8em; }
+
+/* ---- emulator ---- */
+.big-code { font-family: var(--font-mono); font-size: 32px; letter-spacing: .15em; font-variant-numeric: tabular-nums; color: var(--accent-primary); }
+
+/* ---- narrow screens (320px must not scroll horizontally) ---- */
+@media (max-width: 600px) {
+  main { padding: var(--space-8) var(--space-4); }
+  h1 { font-size: 26px; }
+  nav[role=tablist] button { flex: 1 1 40%; padding: 0 var(--space-3); font-size: 14px; }
+  .card, .setting-code, .transmit, .result, fieldset { padding: var(--space-4); }
+  details { padding: var(--space-2) var(--space-4); }
+  .setting-code output, .big-code { font-size: 26px; }
+}
+
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+
+/* transmit event log */
+.mono-log { font-family: var(--font-mono); white-space: pre; overflow-x: auto; padding-left: var(--space-6); }

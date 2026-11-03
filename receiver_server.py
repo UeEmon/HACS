@@ -33,6 +33,8 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         if urlparse(self.path).path == '/':
             return self.reply(200,Path(__file__).with_name('receiver.html').read_bytes(),'text/html; charset=utf-8')
+        if urlparse(self.path).path == '/washitsu.css':
+            return self.reply(200,Path(__file__).with_name('washitsu.css').read_bytes(),'text/css; charset=utf-8')
         if urlparse(self.path).path == '/rotation_ui.js':
             return self.reply(200,Path(__file__).with_name('rotation_ui.js').read_bytes(),'text/javascript; charset=utf-8')
         if urlparse(self.path).path == '/api/rotation':
